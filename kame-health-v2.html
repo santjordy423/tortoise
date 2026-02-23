@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>かめの記録帳</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&family=Kaisei+Opti&display=swap');
+
+  :root {
+    --bg: #f0ede6;
+    --card: #faf8f4;
+    --green: #7aab7a;
+    --green-light: #d4e8d4;
+    --sand: #d4b896;
+    --water: #7aabc0;
+    --water-light: #d4e8f2;
+    --text: #4a3f35;
+    --text-muted: #9a8a7a;
+    --yes: #7aab7a;
+    --no: #e07a5f;
+    --none-color: #c0b8a8;
+    --radius: 16px;
+    --shadow: 0 2px 12px rgba(74,63,53,0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Zen Maru Gothic', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 80px;
+  }
+
+  header {
+    background: var(--card);
+    border-bottom: 2px solid var(--sand);
+    padding: 16px 20px 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  h1 {
+    font-family: 'Kaisei Opti', serif;
+    font-size: 1.4rem;
+  }
+
+  /* ナビタブ */
+  .nav-tabs {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .nav-tab {
+    flex: 1;
+    padding: 8px;
+    border: 2px solid var(--sand);
+    border-radius: 10px;
+    background: transparent;
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .nav-tab.active {
+    background: var(--sand);
+    color: white;
+    border-color: var(--sand);
+  }
+
+  main { padding: 16px; max-width: 480px; margin: 0 auto; }
+
+  /* ===== 記録画面 ===== */
+  .session-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 8px;
+    border: 2px solid var(--green);
+    border-radius: 10px;
+    background: transparent;
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: 0.9rem;
+    color: var(--green);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .tab.active {
+    background: var(--green);
+    color: white;
+  }
+
+  .section-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    margin: 14px 0 8px;
+    padding-left: 4px;
+  }
+
+  .turtle-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .turtle-icon { width: 52px; height: 52px; flex-shrink: 0; }
+
+  .turtle-info { flex: 1; min-width: 0; }
+
+  .turtle-name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .turtle-species { font-size: 0.68rem; color: var(--text-muted); margin-top: 2px; }
+
+  .gender-badge {
+    font-size: 0.68rem;
+    padding: 1px 5px;
+    border-radius: 6px;
+    font-weight: 500;
+  }
+  .male { background: #ddeeff; color: #5588aa; }
+  .female { background: #ffddee; color: #aa5577; }
+
+  .check-group { display: flex; flex-direction: column; gap: 5px; align-items: flex-end; }
+
+  .check-row { display: flex; align-items: center; gap: 5px; }
+
+  .check-label { font-size: 0.68rem; color: var(--text-muted); width: 38px; text-align: right; }
+
+  .btn-group { display: flex; gap: 3px; }
+
+  .btn {
+    width: 38px;
+    height: 30px;
+    border-radius: 8px;
+    border: 2px solid #e0dcd6;
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: 0.68rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: #f5f3ef;
+    color: var(--text-muted);
+  }
+
+  .btn:hover { transform: scale(1.05); }
+  .btn.selected-yes { background: var(--green-light); border-color: var(--green); color: var(--green); font-weight: 700; }
+  .btn.selected-no { background: #fde8e4; border-color: var(--no); color: var(--no); font-weight: 700; }
+  .btn.selected-none { background: #eae8e4; border-color: var(--none-color); color: var(--none-color); font-weight: 700; }
+
+  .water-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-left: 4px solid var(--water);
+  }
+
+  .btn-feed {
+    width: 52px;
+    height: 34px;
+    border-radius: 10px;
+    border: 2px solid #e0dcd6;
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: #f5f3ef;
+    color: var(--text-muted);
+  }
+  .btn-feed.selected-yes { background: var(--water-light); border-color: var(--water); color: var(--water); font-weight: 700; }
+  .btn-feed.selected-no { background: #fde8e4; border-color: var(--no); color: var(--no); font-weight: 700; }
+
+  .save-btn {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--green);
+    color: white;
+    border: none;
+    padding: 14px 40px;
+    border-radius: 50px;
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(122,171,122,0.4);
+    transition: all 0.2s;
+    z-index: 50;
+  }
+  .save-btn:hover { transform: translateX(-50%) scale(1.03); }
+
+  /* 連続日数バッジ */
+  .days-badge {
+    font-size: 0.65rem;
+    padding: 2px 7px;
+    border-radius: 8px;
+    margin-top: 3px;
+    display: inline-block;
+    font-weight: 700;
+  }
+  .days-ok   { background: #e8f5e8; color: #7aab7a; }
+  .days-warn { background: #fff8e0; color: #c8940a; }
+  .days-alert{ background: #fde8e4; color: #e07a5f; }
+
+  /* メモ欄 */
+  .memo-section {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 14px 16px;
+    margin-top: 10px;
+  }
+  .memo-section textarea {
+    width: 100%;
+    border: 2px solid #e0dcd6;
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: 0.85rem;
+    color: var(--text);
+    background: var(--bg);
+    resize: none;
+    outline: none;
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+  .memo-section textarea:focus {
+    border-color: var(--sand);
+  }
+
+  /* カレンダーのメモマーク */
+  .memo-mark {
+    font-size: 0.55rem;
+    line-height: 1;
+  }
+
+
+  /* ===== カレンダー画面 ===== */
+  #view-calendar { display: none; }
+  #view-calendar.visible { display: block; }
+
+  /* カメ選択 */
+  .turtle-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .turtle-chip {
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 2px solid var(--sand);
+    background: var(--card);
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .turtle-chip.active {
+    background: var(--sand);
+    color: white;
+    border-color: var(--sand);
+  }
+
+  .turtle-chip.water-chip.active {
+    background: var(--water);
+    border-color: var(--water);
+  }
+
+  /* カレンダー本体 */
+  .calendar-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px;
+  }
+
+  .cal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .cal-title {
+    font-family: 'Kaisei Opti', serif;
+    font-size: 1.1rem;
+  }
+
+  .cal-nav {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: background 0.15s;
+  }
+  .cal-nav:hover { background: var(--bg); }
+
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+
+  .cal-dow {
+    text-align: center;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    padding: 4px 0;
+    font-weight: 700;
+  }
+
+  .cal-day {
+    aspect-ratio: 1;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    position: relative;
+    cursor: default;
+    padding: 2px;
+  }
+
+  .cal-day.empty { background: transparent; }
+
+  .cal-day.today { font-weight: 700; ring: 2px solid var(--sand); }
+
+  .cal-day .day-num { font-size: 0.72rem; line-height: 1; }
+
+  /* 記録ドット */
+  .dots {
+    display: flex;
+    gap: 2px;
+    margin-top: 2px;
+  }
+
+  .dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+  }
+
+  /* 水ガメ用（ごはんあり/なし） */
+  .cal-day.feed-yes { background: var(--water-light); }
+  .cal-day.feed-no { background: #fde8e4; }
+  .cal-day.feed-none { background: #f0ede6; }
+
+  /* リクガメ用背景：朝・夜のうんち状況 */
+  .cal-day.all-good { background: #e8f5e8; }
+  .cal-day.some-poop { background: #f5f0e8; }
+  .cal-day.no-poop { background: #fde8e4; }
+  .cal-day.no-bath { background: #f0ede6; }
+  .cal-day.has-record { border: 1.5px solid #d4e8d4; }
+
+  /* ===== 設定パネル ===== */
+  .settings-btn {
+    background: none;
+    border: 2px solid var(--sand);
+    border-radius: 10px;
+    padding: 4px 9px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .settings-btn:hover { background: var(--bg); }
+
+  .settings-panel {
+    display: none;
+    padding: 12px 0 4px;
+    border-top: 1px solid #e8e0d8;
+    margin-top: 10px;
+  }
+  .settings-panel.open { display: block; }
+
+  .settings-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+  .settings-row label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-muted);
+  }
+  .settings-row input {
+    border: 2px solid #e0dcd6;
+    border-radius: 10px;
+    padding: 7px 10px;
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: 0.82rem;
+    color: var(--text);
+    background: var(--bg);
+    outline: none;
+    width: 100%;
+  }
+  .settings-row input:focus { border-color: var(--sand); }
+
+  .settings-btns {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+  .btn-jb {
+    padding: 7px 12px;
+    border-radius: 10px;
+    border: 2px solid var(--sand);
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-jb.primary { background: var(--sand); color: white; }
+  .btn-jb.secondary { background: transparent; color: var(--sand); }
+
+  .sync-status {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+    min-height: 1.1em;
+  }
+
+  /* 凡例 */
+  .legend {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+  }
+
+  .legend-item { display: flex; align-items: center; gap: 4px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+
+  /* 詳細ポップアップ */
+  .detail-popup {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 14px 16px;
+    margin-top: 12px;
+    border-left: 4px solid var(--sand);
+    display: none;
+  }
+
+  .detail-popup.show { display: block; }
+
+  .detail-title { font-weight: 700; margin-bottom: 8px; font-size: 0.9rem; }
+
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--bg);
+  }
+
+  .tag {
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+  .tag-yes { background: var(--green-light); color: var(--green); }
+  .tag-no { background: #fde8e4; color: var(--no); }
+  .tag-none { background: #eae8e4; color: var(--none-color); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <h1>🐢 かめの記録帳</h1>
+    <div style="text-align:right; flex:1; margin: 0 8px">
+      <div id="header-date" style="font-size:0.85rem; font-weight:700"></div>
+      <div id="sync-status" class="sync-status"></div>
+    </div>
+    <button class="settings-btn" onclick="toggleSettings()">⚙️</button>
+  </div>
+
+  <!-- JSONBin設定パネル -->
+  <div class="settings-panel" id="settings-panel">
+    <div class="settings-row">
+      <label>JSONBin マスターキー</label>
+      <input type="password" id="jb-api-key" placeholder="$2a$10$..." autocomplete="off">
+    </div>
+    <div class="settings-row">
+      <label>Bin ID</label>
+      <input type="text" id="jb-bin-id" placeholder="68xxxxxxxxxxxxxx" autocomplete="off">
+    </div>
+    <div class="settings-btns">
+      <button class="btn-jb primary" onclick="saveJbConfig()">💾 設定保存</button>
+      <button class="btn-jb secondary" onclick="createNewBin()">📦 新規Bin作成</button>
+      <button class="btn-jb secondary" onclick="syncFromCloud()">☁️ 今すぐ同期</button>
+    </div>
+  </div>
+
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showView('record', this)">📝 記録する</button>
+    <button class="nav-tab" onclick="showView('calendar', this)">📅 カレンダー</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- ===== 記録画面 ===== -->
+  <div id="view-record">
+    <div class="session-tabs">
+      <button class="tab active" onclick="setSession('morning', this)">🌅 朝</button>
+      <button class="tab" onclick="setSession('night', this)">🌙 夜</button>
+    </div>
+
+    <div class="section-label">🐢 リクガメ（温浴）</div>
+
+    <div id="land-cards"></div>
+
+    <div class="section-label">🐠 水ガメ（ごはん）</div>
+
+    <div class="water-card">
+      <div class="turtle-icon"><svg width="52" height="52" viewBox="0 0 70 70">
+    <defs><clipPath id="c-kuro-wc"><ellipse cx="35" cy="37" rx="22" ry="19"/></clipPath></defs>
+    <ellipse cx="16" cy="46" rx="8" ry="5" fill="#3a4030" transform="rotate(-20,16,46)"/>
+    <ellipse cx="54" cy="46" rx="8" ry="5" fill="#3a4030" transform="rotate(20,54,46)"/>
+    <ellipse cx="16" cy="29" rx="8" ry="5" fill="#3a4030" transform="rotate(20,16,29)"/>
+    <ellipse cx="54" cy="29" rx="8" ry="5" fill="#3a4030" transform="rotate(-20,54,29)"/>
+    <ellipse cx="35" cy="57" rx="4" ry="4.5" fill="#3a4030"/>
+    <ellipse cx="35" cy="17" rx="8.5" ry="7.5" fill="#1a1e14"/>
+    <circle cx="31" cy="15" r="2" fill="#c8b820"/><circle cx="39" cy="15" r="2" fill="#c8b820"/>
+    <circle cx="31" cy="15" r="1.1" fill="#0a0a08"/><circle cx="39" cy="15" r="1.1" fill="#0a0a08"/>
+    <circle cx="31.5" cy="14.5" r="0.4" fill="white"/><circle cx="39.5" cy="14.5" r="0.4" fill="white"/>
+    <ellipse cx="35" cy="37" rx="22" ry="19" fill="#1e2418"/>
+    <g clip-path="url(#c-kuro-wc)">
+      <ellipse cx="35" cy="37" rx="3" ry="16" fill="#141810"/>
+      <ellipse cx="24" cy="38" rx="2.2" ry="12" fill="#141810" transform="rotate(-5,24,38)"/>
+      <ellipse cx="46" cy="38" rx="2.2" ry="12" fill="#141810" transform="rotate(5,46,38)"/>
+      <line x1="13" y1="30" x2="57" y2="30" stroke="#2a3020" stroke-width="0.8"/>
+      <line x1="13" y1="44" x2="57" y2="44" stroke="#2a3020" stroke-width="0.8"/>
+      <line x1="26" y1="18" x2="26" y2="56" stroke="#2a3020" stroke-width="0.8"/>
+      <line x1="44" y1="18" x2="44" y2="56" stroke="#2a3020" stroke-width="0.8"/>
+    </g></svg></div>
+      <div class="turtle-info">
+        <div class="turtle-name">クロ <span class="gender-badge male">♂</span></div>
+        <div class="turtle-species">クサガメ</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px">
+        <span style="font-size:0.75rem; color:var(--text-muted)">ごはん</span>
+        <button class="btn-feed" id="kuro-yes" onclick="selectFeed('yes')">あげた</button>
+        <button class="btn-feed" id="kuro-no" onclick="selectFeed('no')">なし</button>
+      </div>
+    </div>
+
+    <div class="section-label">📝 今日のメモ</div>
+    <div class="memo-section">
+      <textarea id="daily-memo" rows="3" placeholder="気になったことを書いておこう（食欲、様子など）"></textarea>
+    </div>
+  </div>
+
+  <!-- ===== カレンダー画面 ===== -->
+  <div id="view-calendar">
+    <div class="turtle-selector" id="turtle-chips"></div>
+
+    <div class="calendar-card">
+      <div class="cal-header">
+        <button class="cal-nav" onclick="changeMonth(-1)">‹</button>
+        <div class="cal-title" id="cal-title"></div>
+        <button class="cal-nav" onclick="changeMonth(1)">›</button>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div class="legend" id="cal-legend"></div>
+    </div>
+
+    <div class="detail-popup" id="detail-popup">
+      <div class="detail-title" id="detail-title"></div>
+      <div id="detail-body"></div>
+    </div>
+  </div>
+
+</main>
+
+<button class="save-btn" id="save-btn" onclick="save()">💾 保存する</button>
+
+<script>
+
+// ===== JSONBin連携 =====
+let jbConfig = { apiKey: '', binId: '' };
+
+function loadJbConfig() {
+  const saved = localStorage.getItem('kameJsonBin');
+  if (saved) jbConfig = JSON.parse(saved);
+  document.getElementById('jb-api-key').value = jbConfig.apiKey || '';
+  document.getElementById('jb-bin-id').value  = jbConfig.binId  || '';
+}
+
+function saveJbConfig() {
+  jbConfig.apiKey = document.getElementById('jb-api-key').value.trim();
+  jbConfig.binId  = document.getElementById('jb-bin-id').value.trim();
+  localStorage.setItem('kameJsonBin', JSON.stringify(jbConfig));
+  setSyncStatus('設定を保存しました ✅');
+}
+
+function toggleSettings() {
+  document.getElementById('settings-panel').classList.toggle('open');
+}
+
+function setSyncStatus(msg, isError = false) {
+  const el = document.getElementById('sync-status');
+  el.textContent = msg;
+  el.style.color = isError ? 'var(--no)' : 'var(--text-muted)';
+}
+
+async function loadFromJsonBin() {
+  if (!jbConfig.apiKey || !jbConfig.binId) return false;
+  try {
+    setSyncStatus('☁️ 読み込み中...');
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${jbConfig.binId}/latest`, {
+      headers: { 'X-Master-Key': jbConfig.apiKey }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    allData = json.record || {};
+    setSyncStatus('☁️ 同期済み ✅');
+    return true;
+  } catch(e) {
+    setSyncStatus(`読込失敗: ${e.message}`, true);
+    return false;
+  }
+}
+
+async function saveToJsonBin() {
+  if (!jbConfig.apiKey || !jbConfig.binId) return;
+  try {
+    setSyncStatus('☁️ 保存中...');
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${jbConfig.binId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': jbConfig.apiKey
+      },
+      body: JSON.stringify(allData)
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    setSyncStatus('☁️ クラウド保存済み ✅');
+  } catch(e) {
+    setSyncStatus(`クラウド保存失敗: ${e.message}`, true);
+  }
+}
+
+async function createNewBin() {
+  if (!jbConfig.apiKey) { setSyncStatus('APIキーを入力してください', true); return; }
+  try {
+    setSyncStatus('📦 新規作成中...');
+    const res = await fetch('https://api.jsonbin.io/v3/b', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': jbConfig.apiKey,
+        'X-Bin-Name': 'kame-health-data',
+        'X-Bin-Private': 'true'
+      },
+      body: JSON.stringify(allData)
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    jbConfig.binId = json.metadata.id;
+    document.getElementById('jb-bin-id').value = jbConfig.binId;
+    localStorage.setItem('kameJsonBin', JSON.stringify(jbConfig));
+    setSyncStatus(`✅ Bin作成完了！ID: ${jbConfig.binId}`);
+  } catch(e) {
+    setSyncStatus(`作成失敗: ${e.message}`, true);
+  }
+}
+
+async function syncFromCloud() {
+  const loaded = await loadFromJsonBin();
+  if (loaded) {
+    localStorage.setItem('kameData', JSON.stringify(allData));
+    if (allData[todayStr]) recordState = allData[todayStr];
+    renderLandCards();
+    restoreRecordUI();
+    if (allData[todayStr]?.memo) document.getElementById('daily-memo').value = allData[todayStr].memo;
+    renderCalendar();
+  }
+}
+
+// ===== カメSVGイラスト =====
+function getTurtleSVG(id) {
+  // ビルマホシガメ（♂）
+  const hosiMale = `<svg width="52" height="52" viewBox="0 0 70 70">
+    <defs><clipPath id="c-hosi-${id}"><ellipse cx="35" cy="37" rx="22" ry="19"/></clipPath></defs>
+    <ellipse cx="16" cy="46" rx="8" ry="5" fill="#b8903a" transform="rotate(-20,16,46)"/>
+    <ellipse cx="54" cy="46" rx="8" ry="5" fill="#b8903a" transform="rotate(20,54,46)"/>
+    <ellipse cx="16" cy="29" rx="8" ry="5" fill="#b8903a" transform="rotate(20,16,29)"/>
+    <ellipse cx="54" cy="29" rx="8" ry="5" fill="#b8903a" transform="rotate(-20,54,29)"/>
+    <ellipse cx="35" cy="57" rx="4" ry="4.5" fill="#b8903a"/>
+    <ellipse cx="35" cy="17" rx="8.5" ry="7.5" fill="#b8903a"/>
+    <circle cx="31" cy="15" r="1.8" fill="#1a1a0a"/><circle cx="39" cy="15" r="1.8" fill="#1a1a0a"/>
+    <circle cx="31.6" cy="14.4" r="0.7" fill="white"/><circle cx="39.6" cy="14.4" r="0.7" fill="white"/>
+    <ellipse cx="35" cy="37" rx="22" ry="19" fill="#1a1a0e"/>
+    <g clip-path="url(#c-hosi-${id})">
+      <ellipse cx="35" cy="35" rx="8" ry="7" fill="#1a1a0e" stroke="#e8c830" stroke-width="0.8"/>
+      <line x1="35" y1="28" x2="35" y2="18" stroke="#e8c830" stroke-width="1.4"/>
+      <line x1="35" y1="42" x2="35" y2="52" stroke="#e8c830" stroke-width="1.4"/>
+      <line x1="27" y1="35" x2="17" y2="35" stroke="#e8c830" stroke-width="1.4"/>
+      <line x1="43" y1="35" x2="53" y2="35" stroke="#e8c830" stroke-width="1.4"/>
+      <line x1="29" y1="29" x2="21" y2="21" stroke="#e8c830" stroke-width="1.2"/>
+      <line x1="41" y1="29" x2="49" y2="21" stroke="#e8c830" stroke-width="1.2"/>
+      <line x1="29" y1="41" x2="21" y2="49" stroke="#e8c830" stroke-width="1.2"/>
+      <line x1="41" y1="41" x2="49" y2="49" stroke="#e8c830" stroke-width="1.2"/>
+      <ellipse cx="22" cy="26" rx="5" ry="4.5" fill="#1a1a0e" stroke="#e8c830" stroke-width="0.7"/>
+      <line x1="22" y1="21" x2="22" y2="13" stroke="#e8c830" stroke-width="1.1"/>
+      <line x1="17" y1="26" x2="9" y2="26" stroke="#e8c830" stroke-width="1.1"/>
+      <line x1="19" y1="22" x2="13" y2="16" stroke="#e8c830" stroke-width="1"/>
+      <line x1="25" y1="22" x2="31" y2="16" stroke="#e8c830" stroke-width="1"/>
+      <line x1="19" y1="30" x2="13" y2="36" stroke="#e8c830" stroke-width="1"/>
+      <ellipse cx="48" cy="26" rx="5" ry="4.5" fill="#1a1a0e" stroke="#e8c830" stroke-width="0.7"/>
+      <line x1="48" y1="21" x2="48" y2="13" stroke="#e8c830" stroke-width="1.1"/>
+      <line x1="53" y1="26" x2="61" y2="26" stroke="#e8c830" stroke-width="1.1"/>
+      <line x1="51" y1="22" x2="57" y2="16" stroke="#e8c830" stroke-width="1"/>
+      <line x1="45" y1="22" x2="39" y2="16" stroke="#e8c830" stroke-width="1"/>
+      <line x1="51" y1="30" x2="57" y2="36" stroke="#e8c830" stroke-width="1"/>
+      <ellipse cx="22" cy="47" rx="5" ry="4.5" fill="#1a1a0e" stroke="#e8c830" stroke-width="0.7"/>
+      <line x1="22" y1="52" x2="22" y2="60" stroke="#e8c830" stroke-width="1.1"/>
+      <line x1="17" y1="47" x2="9" y2="47" stroke="#e8c830" stroke-width="1.1"/>
+      <line x1="19" y1="51" x2="13" y2="57" stroke="#e8c830" stroke-width="1"/>
+      <line x1="19" y1="43" x2="13" y2="37" stroke="#e8c830" stroke-width="1"/>
+      <ellipse cx="48" cy="47" rx="5" ry="4.5" fill="#1a1a0e" stroke="#e8c830" stroke-width="0.7"/>
+      <line x1="48" y1="52" x2="48" y2="60" stroke="#e8c830" stroke-width="1.1"/>
+      <line x1="53" y1="47" x2="61" y2="47" stroke="#e8c830" stroke-width="1.1"/>
+      <line x1="51" y1="51" x2="57" y2="57" stroke="#e8c830" stroke-width="1"/>
+      <line x1="51" y1="43" x2="57" y2="37" stroke="#e8c830" stroke-width="1"/>
+    </g></svg>`;
+
+  // ビルマホシガメ（♀）まつ毛あり
+  const hosiFemale = `<svg width="52" height="52" viewBox="0 0 70 70">
+    <defs><clipPath id="c-hosi-${id}"><ellipse cx="35" cy="37" rx="22" ry="19"/></clipPath></defs>
+    <ellipse cx="16" cy="46" rx="8" ry="5" fill="#b8903a" transform="rotate(-20,16,46)"/>
+    <ellipse cx="54" cy="46" rx="8" ry="5" fill="#b8903a" transform="rotate(20,54,46)"/>
+    <ellipse cx="16" cy="29" rx="8" ry="5" fill="#b8903a" transform="rotate(20,16,29)"/>
+    <ellipse cx="54" cy="29" rx="8" ry="5" fill="#b8903a" transform="rotate(-20,54,29)"/>
+    <ellipse cx="35" cy="57" rx="4" ry="4.5" fill="#b8903a"/>
+    <ellipse cx="35" cy="17" rx="8.5" ry="7.5" fill="#b8903a"/>
+    <circle cx="31" cy="15" r="1.8" fill="#1a1a0a"/><circle cx="39" cy="15" r="1.8" fill="#1a1a0a"/>
+    <circle cx="31.6" cy="14.4" r="0.7" fill="white"/><circle cx="39.6" cy="14.4" r="0.7" fill="white"/>
+    <line x1="29.5" y1="13" x2="29" y2="11" stroke="#1a1a0a" stroke-width="0.9"/>
+    <line x1="31" y1="12.5" x2="31" y2="10.5" stroke="#1a1a0a" stroke-width="0.9"/>
+    <line x1="32.5" y1="13" x2="33" y2="11" stroke="#1a1a0a" stroke-width="0.9"/>
+    <line x1="37.5" y1="13" x2="37" y2="11" stroke="#1a1a0a" stroke-width="0.9"/>
+    <line x1="39" y1="12.5" x2="39" y2="10.5" stroke="#1a1a0a" stroke-width="0.9"/>
+    <line x1="40.5" y1="13" x2="41" y2="11" stroke="#1a1a0a" stroke-width="0.9"/>
+    <ellipse cx="35" cy="37" rx="22" ry="19" fill="#1a1a0e"/>
+    <g clip-path="url(#c-hosi-${id})">
+      <ellipse cx="35" cy="35" rx="8" ry="7" fill="#1a1a0e" stroke="#e8c830" stroke-width="0.8"/>
+      <line x1="35" y1="28" x2="35" y2="18" stroke="#e8c830" stroke-width="1.4"/>
+      <line x1="35" y1="42" x2="35" y2="52" stroke="#e8c830" stroke-width="1.4"/>
+      <line x1="27" y1="35" x2="17" y2="35" stroke="#e8c830" stroke-width="1.4"/>
+      <line x1="43" y1="35" x2="53" y2="35" stroke="#e8c830" stroke-width="1.4"/>
+      <line x1="29" y1="29" x2="21" y2="21" stroke="#e8c830" stroke-width="1.2"/>
+      <line x1="41" y1="29" x2="49" y2="21" stroke="#e8c830" stroke-width="1.2"/>
+      <line x1="29" y1="41" x2="21" y2="49" stroke="#e8c830" stroke-width="1.2"/>
+      <line x1="41" y1="41" x2="49" y2="49" stroke="#e8c830" stroke-width="1.2"/>
+      <ellipse cx="22" cy="26" rx="5" ry="4.5" fill="#1a1a0e" stroke="#e8c830" stroke-width="0.7"/>
+      <line x1="22" y1="21" x2="22" y2="13" stroke="#e8c830" stroke-width="1.1"/>
+      <line x1="17" y1="26" x2="9" y2="26" stroke="#e8c830" stroke-width="1.1"/>
+      <line x1="19" y1="22" x2="13" y2="16" stroke="#e8c830" stroke-width="1"/>
+      <line x1="25" y1="22" x2="31" y2="16" stroke="#e8c830" stroke-width="1"/>
+      <line x1="19" y1="30" x2="13" y2="36" stroke="#e8c830" stroke-width="1"/>
+      <ellipse cx="48" cy="26" rx="5" ry="4.5" fill="#1a1a0e" stroke="#e8c830" stroke-width="0.7"/>
+      <line x1="48" y1="21" x2="48" y2="13" stroke="#e8c830" stroke-width="1.1"/>
+      <line x1="53" y1="26" x2="61" y2="26" stroke="#e8c830" stroke-width="1.1"/>
+      <line x1="51" y1="22" x2="57" y2="16" stroke="#e8c830" stroke-width="1"/>
+      <line x1="45" y1="22" x2="39" y2="16" stroke="#e8c830" stroke-width="1"/>
+      <line x1="51" y1="30" x2="57" y2="36" stroke="#e8c830" stroke-width="1"/>
+      <ellipse cx="22" cy="47" rx="5" ry="4.5" fill="#1a1a0e" stroke="#e8c830" stroke-width="0.7"/>
+      <line x1="22" y1="52" x2="22" y2="60" stroke="#e8c830" stroke-width="1.1"/>
+      <line x1="17" y1="47" x2="9" y2="47" stroke="#e8c830" stroke-width="1.1"/>
+      <line x1="19" y1="51" x2="13" y2="57" stroke="#e8c830" stroke-width="1"/>
+      <line x1="19" y1="43" x2="13" y2="37" stroke="#e8c830" stroke-width="1"/>
+      <ellipse cx="48" cy="47" rx="5" ry="4.5" fill="#1a1a0e" stroke="#e8c830" stroke-width="0.7"/>
+      <line x1="48" y1="52" x2="48" y2="60" stroke="#e8c830" stroke-width="1.1"/>
+      <line x1="53" y1="47" x2="61" y2="47" stroke="#e8c830" stroke-width="1.1"/>
+      <line x1="51" y1="51" x2="57" y2="57" stroke="#e8c830" stroke-width="1"/>
+      <line x1="51" y1="43" x2="57" y2="37" stroke="#e8c830" stroke-width="1"/>
+    </g></svg>`;
+
+  // ホウシャガメ
+  const housha = `<svg width="52" height="52" viewBox="0 0 70 70">
+    <defs><clipPath id="c-tui"><ellipse cx="35" cy="37" rx="22" ry="19"/></clipPath></defs>
+    <ellipse cx="16" cy="46" rx="8" ry="5" fill="#a07830" transform="rotate(-20,16,46)"/>
+    <ellipse cx="54" cy="46" rx="8" ry="5" fill="#a07830" transform="rotate(20,54,46)"/>
+    <ellipse cx="16" cy="29" rx="8" ry="5" fill="#a07830" transform="rotate(20,16,29)"/>
+    <ellipse cx="54" cy="29" rx="8" ry="5" fill="#a07830" transform="rotate(-20,54,29)"/>
+    <ellipse cx="35" cy="57" rx="4" ry="4.5" fill="#a07830"/>
+    <ellipse cx="35" cy="17" rx="8.5" ry="7.5" fill="#a07830"/>
+    <circle cx="31" cy="15" r="1.8" fill="#0a0a04"/><circle cx="39" cy="15" r="1.8" fill="#0a0a04"/>
+    <circle cx="31.6" cy="14.4" r="0.7" fill="white"/><circle cx="39.6" cy="14.4" r="0.7" fill="white"/>
+    <ellipse cx="35" cy="37" rx="22" ry="19" fill="#141408"/>
+    <g clip-path="url(#c-tui)">
+      <line x1="35" y1="37" x2="35" y2="8" stroke="#e8c830" stroke-width="2"/>
+      <line x1="35" y1="37" x2="35" y2="66" stroke="#e8c830" stroke-width="2"/>
+      <line x1="35" y1="37" x2="6" y2="37" stroke="#e8c830" stroke-width="2"/>
+      <line x1="35" y1="37" x2="64" y2="37" stroke="#e8c830" stroke-width="2"/>
+      <line x1="35" y1="37" x2="15" y2="17" stroke="#e8c830" stroke-width="1.8"/>
+      <line x1="35" y1="37" x2="55" y2="17" stroke="#e8c830" stroke-width="1.8"/>
+      <line x1="35" y1="37" x2="15" y2="57" stroke="#e8c830" stroke-width="1.8"/>
+      <line x1="35" y1="37" x2="55" y2="57" stroke="#e8c830" stroke-width="1.8"/>
+      <line x1="35" y1="37" x2="9" y2="22" stroke="#e8c830" stroke-width="1.2"/>
+      <line x1="35" y1="37" x2="61" y2="22" stroke="#e8c830" stroke-width="1.2"/>
+      <line x1="35" y1="37" x2="9" y2="52" stroke="#e8c830" stroke-width="1.2"/>
+      <line x1="35" y1="37" x2="61" y2="52" stroke="#e8c830" stroke-width="1.2"/>
+      <ellipse cx="35" cy="37" rx="22" ry="19" fill="none" stroke="#e8c830" stroke-width="1"/>
+      <circle cx="35" cy="37" r="3.5" fill="#e8c830"/>
+      <circle cx="35" cy="37" r="1.5" fill="#141408"/>
+    </g></svg>`;
+
+  // ヘルマンリクガメ
+  const herman = `<svg width="52" height="52" viewBox="0 0 70 70">
+    <defs><clipPath id="c-kamezo"><ellipse cx="35" cy="37" rx="22" ry="19"/></clipPath></defs>
+    <ellipse cx="16" cy="46" rx="8" ry="5" fill="#c0a050" transform="rotate(-20,16,46)"/>
+    <ellipse cx="54" cy="46" rx="8" ry="5" fill="#c0a050" transform="rotate(20,54,46)"/>
+    <ellipse cx="16" cy="29" rx="8" ry="5" fill="#c0a050" transform="rotate(20,16,29)"/>
+    <ellipse cx="54" cy="29" rx="8" ry="5" fill="#c0a050" transform="rotate(-20,54,29)"/>
+    <ellipse cx="35" cy="57" rx="4" ry="4.5" fill="#c0a050"/>
+    <ellipse cx="35" cy="17" rx="8.5" ry="7.5" fill="#c0a050"/>
+    <circle cx="31" cy="15" r="1.8" fill="#2a1a0a"/><circle cx="39" cy="15" r="1.8" fill="#2a1a0a"/>
+    <circle cx="31.6" cy="14.4" r="0.7" fill="white"/><circle cx="39.6" cy="14.4" r="0.7" fill="white"/>
+    <ellipse cx="35" cy="37" rx="22" ry="19" fill="#d4a830"/>
+    <g clip-path="url(#c-kamezo)">
+      <ellipse cx="35" cy="35" rx="8" ry="7" fill="#b08010"/>
+      <line x1="35" y1="28" x2="35" y2="18" stroke="#2a2000" stroke-width="1.5"/>
+      <line x1="35" y1="42" x2="35" y2="52" stroke="#2a2000" stroke-width="1.5"/>
+      <line x1="27" y1="35" x2="17" y2="35" stroke="#2a2000" stroke-width="1.5"/>
+      <line x1="43" y1="35" x2="53" y2="35" stroke="#2a2000" stroke-width="1.5"/>
+      <line x1="29" y1="29" x2="21" y2="21" stroke="#2a2000" stroke-width="1.2"/>
+      <line x1="41" y1="29" x2="49" y2="21" stroke="#2a2000" stroke-width="1.2"/>
+      <line x1="29" y1="41" x2="21" y2="49" stroke="#2a2000" stroke-width="1.2"/>
+      <line x1="41" y1="41" x2="49" y2="49" stroke="#2a2000" stroke-width="1.2"/>
+      <circle cx="22" cy="26" r="5.5" fill="#2a2000"/>
+      <circle cx="48" cy="26" r="5.5" fill="#2a2000"/>
+      <circle cx="22" cy="47" r="5.5" fill="#2a2000"/>
+      <circle cx="48" cy="47" r="5.5" fill="#2a2000"/>
+      <circle cx="35" cy="51" r="4" fill="#2a2000"/>
+      <circle cx="22" cy="26" r="2.5" fill="#d4a830"/>
+      <circle cx="48" cy="26" r="2.5" fill="#d4a830"/>
+      <circle cx="22" cy="47" r="2.5" fill="#d4a830"/>
+      <circle cx="48" cy="47" r="2.5" fill="#d4a830"/>
+    </g></svg>`;
+
+  // クサガメ
+  const kusagame = `<svg width="52" height="52" viewBox="0 0 70 70">
+    <defs><clipPath id="c-kuro"><ellipse cx="35" cy="37" rx="22" ry="19"/></clipPath></defs>
+    <ellipse cx="16" cy="46" rx="8" ry="5" fill="#3a4030" transform="rotate(-20,16,46)"/>
+    <ellipse cx="54" cy="46" rx="8" ry="5" fill="#3a4030" transform="rotate(20,54,46)"/>
+    <ellipse cx="16" cy="29" rx="8" ry="5" fill="#3a4030" transform="rotate(20,16,29)"/>
+    <ellipse cx="54" cy="29" rx="8" ry="5" fill="#3a4030" transform="rotate(-20,54,29)"/>
+    <ellipse cx="35" cy="57" rx="4" ry="4.5" fill="#3a4030"/>
+    <ellipse cx="35" cy="17" rx="8.5" ry="7.5" fill="#1a1e14"/>
+    <circle cx="31" cy="15" r="2" fill="#c8b820"/><circle cx="39" cy="15" r="2" fill="#c8b820"/>
+    <circle cx="31" cy="15" r="1.1" fill="#0a0a08"/><circle cx="39" cy="15" r="1.1" fill="#0a0a08"/>
+    <circle cx="31.5" cy="14.5" r="0.4" fill="white"/><circle cx="39.5" cy="14.5" r="0.4" fill="white"/>
+    <ellipse cx="35" cy="37" rx="22" ry="19" fill="#1e2418"/>
+    <g clip-path="url(#c-kuro)">
+      <ellipse cx="35" cy="37" rx="3" ry="16" fill="#141810"/>
+      <ellipse cx="24" cy="38" rx="2.2" ry="12" fill="#141810" transform="rotate(-5,24,38)"/>
+      <ellipse cx="46" cy="38" rx="2.2" ry="12" fill="#141810" transform="rotate(5,46,38)"/>
+      <line x1="13" y1="30" x2="57" y2="30" stroke="#2a3020" stroke-width="0.8"/>
+      <line x1="13" y1="44" x2="57" y2="44" stroke="#2a3020" stroke-width="0.8"/>
+      <line x1="26" y1="18" x2="26" y2="56" stroke="#2a3020" stroke-width="0.8"/>
+      <line x1="44" y1="18" x2="44" y2="56" stroke="#2a3020" stroke-width="0.8"/>
+    </g></svg>`;
+
+  const map = {
+    michael: hosiMale,
+    narrow:  hosiMale,
+    lily:    hosiFemale,
+    ram:     hosiFemale,
+    tui:     housha,
+    kamezo:  herman,
+    kuro:    kusagame,
+  };
+  return map[id] || hosiMale;
+}
+
+
+// ===== 連続何日うんちが出てないか =====
+function getDaysSinceLastPoop(turtleId) {
+  let count = 0;
+  const d = new Date(today);
+  // 今日は除外して昨日から遡る（今日まだ記録中の可能性があるため）
+  d.setDate(d.getDate() - 1);
+  for (let i = 0; i < 30; i++) {
+    const ds = toDateStr(d);
+    const dayData = allData[ds];
+    const mPoop = dayData?.morning?.[turtleId]?.poop;
+    const nPoop = dayData?.night?.[turtleId]?.poop;
+    if (mPoop === 'yes' || nPoop === 'yes') return count; // 出た日が見つかった
+    if (mPoop || nPoop) count++; // 記録があるが出ていない
+    d.setDate(d.getDate() - 1);
+  }
+  return count > 0 ? count : null;
+}
+
+function daysBadgeHtml(turtleId) {
+  const days = getDaysSinceLastPoop(turtleId);
+  if (days === null || days === 0) return '';
+  const cls = days >= 5 ? 'days-alert' : days >= 3 ? 'days-warn' : 'days-ok';
+  return `<span class="days-badge ${cls}">💩 ${days}日ぶり</span>`;
+}
+
+// ===== データ定義 =====
+const LAND_TURTLES = [
+  { id: 'michael', name: 'マイケル', gender: 'male', species: 'ビルマホシガメ' },
+  { id: 'lily',    name: 'リリー',   gender: 'female', species: 'ビルマホシガメ' },
+  { id: 'ram',     name: 'ラム',     gender: 'female', species: 'ビルマホシガメ' },
+  { id: 'narrow',  name: 'ナロー',   gender: 'male',   species: 'ビルマホシガメ' },
+  { id: 'tui',     name: 'トゥイ',   gender: 'male',   species: 'ホウシャガメ', urateLabel: '尿' },
+  { id: 'kamezo',  name: 'かめぞう', gender: 'male',   species: 'ヘルマンリクガメ' },
+];
+const WATER_TURTLE = { id: 'kuro', name: 'クロ', gender: 'male', species: 'クサガメ' };
+const ALL_TURTLES = [...LAND_TURTLES, WATER_TURTLE];
+
+// ===== State =====
+let session = 'morning';
+let recordState = {}; // { session: { turtleId: { poop, urate } } }
+let allData = {}; // { 'YYYY-MM-DD': { morning: {...}, night: {...} } }
+let calYear, calMonth, selectedTurtle;
+
+// 今日の日付
+const today = new Date();
+const todayStr = toDateStr(today);
+calYear = today.getFullYear();
+calMonth = today.getMonth();
+selectedTurtle = LAND_TURTLES[0].id;
+
+// ===== 初期化 =====
+async function init() {
+  // ヘッダー日付
+  document.getElementById('header-date').textContent =
+    today.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
+
+  // JSONBin設定を読み込む
+  loadJbConfig();
+
+  // localStorage から読み込み（オフライン用）
+  const saved = localStorage.getItem('kameData');
+  if (saved) allData = JSON.parse(saved);
+
+  // JSONBinから最新データを取得（設定されていれば上書き）
+  const loaded = await loadFromJsonBin();
+  if (loaded) {
+    localStorage.setItem('kameData', JSON.stringify(allData));
+  }
+
+  // 今日の記録があればStateに反映
+  if (allData[todayStr]) {
+    recordState = allData[todayStr];
+  }
+
+  renderLandCards();
+  restoreRecordUI();
+  // メモ復元
+  if (allData[todayStr]?.memo) {
+    document.getElementById('daily-memo').value = allData[todayStr].memo;
+  }
+  renderTurtleChips();
+  renderCalendar();
+}
+
+// ===== 記録画面 =====
+function renderLandCards() {
+  const container = document.getElementById('land-cards');
+  container.innerHTML = LAND_TURTLES.map(t => `
+    <div class="turtle-card">
+      <div class="turtle-icon">${getTurtleSVG(t.id)}</div>
+      <div class="turtle-info">
+        <div class="turtle-name">${t.name} <span class="gender-badge ${t.gender}">${t.gender === 'male' ? '♂' : '♀'}</span></div>
+        <div class="turtle-species">${t.species}</div>
+        ${daysBadgeHtml(t.id)}
+      </div>
+      <div class="check-group">
+        <div class="check-row">
+          <span class="check-label">うんち</span>
+          <div class="btn-group">
+            <button class="btn" id="btn-${t.id}-poop-yes"  onclick="select('${t.id}','poop','yes',  this)">あり</button>
+            <button class="btn" id="btn-${t.id}-poop-no"   onclick="select('${t.id}','poop','no',   this)">なし</button>
+            <button class="btn" id="btn-${t.id}-poop-none" onclick="select('${t.id}','poop','none', this)">－</button>
+          </div>
+        </div>
+        <div class="check-row">
+          <span class="check-label">${t.urateLabel || '尿酸'}</span>
+          <div class="btn-group">
+            <button class="btn" id="btn-${t.id}-urate-yes"  onclick="select('${t.id}','urate','yes',  this)">あり</button>
+            <button class="btn" id="btn-${t.id}-urate-no"   onclick="select('${t.id}','urate','no',   this)">なし</button>
+            <button class="btn" id="btn-${t.id}-urate-none" onclick="select('${t.id}','urate','none', this)">－</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function restoreRecordUI() {
+  if (!recordState[session]) return;
+  const s = recordState[session];
+  LAND_TURTLES.forEach(t => {
+    if (!s[t.id]) return;
+    ['poop','urate'].forEach(type => {
+      const val = s[t.id][type];
+      if (val) {
+        const btn = document.getElementById(`btn-${t.id}-${type}-${val}`);
+        if (btn) {
+          btn.parentElement.querySelectorAll('.btn').forEach(b => b.className = 'btn');
+          btn.classList.add('selected-' + val);
+        }
+      }
+    });
+  });
+  // クロ
+  if (s['kuro']) {
+    const val = s['kuro'].feed;
+    document.getElementById('kuro-yes').className = 'btn-feed' + (val === 'yes' ? ' selected-yes' : '');
+    document.getElementById('kuro-no').className  = 'btn-feed' + (val === 'no'  ? ' selected-no'  : '');
+  }
+}
+
+function setSession(s, el) {
+  session = s;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  // ボタンリセット
+  document.querySelectorAll('.btn').forEach(b => b.className = 'btn');
+  document.querySelectorAll('.btn-feed').forEach(b => b.className = 'btn-feed');
+  restoreRecordUI();
+}
+
+function select(turtle, type, value, btn) {
+  btn.parentElement.querySelectorAll('.btn').forEach(b => b.className = 'btn');
+  btn.classList.add('selected-' + value);
+  if (!recordState[session]) recordState[session] = {};
+  if (!recordState[session][turtle]) recordState[session][turtle] = {};
+  recordState[session][turtle][type] = value;
+}
+
+function selectFeed(value) {
+  document.getElementById('kuro-yes').className = 'btn-feed' + (value === 'yes' ? ' selected-yes' : '');
+  document.getElementById('kuro-no').className  = 'btn-feed' + (value === 'no'  ? ' selected-no'  : '');
+  if (!recordState[session]) recordState[session] = {};
+  recordState[session]['kuro'] = { feed: value };
+}
+
+async function save() {
+  allData[todayStr] = { ...allData[todayStr], ...recordState };
+  const memo = document.getElementById('daily-memo').value.trim();
+  if (memo) allData[todayStr].memo = memo;
+  else if (allData[todayStr]) delete allData[todayStr].memo;
+  localStorage.setItem('kameData', JSON.stringify(allData));
+  renderCalendar();
+  // JSONBinへ同期
+  await saveToJsonBin();
+  // 簡易フィードバック
+  const btn = document.getElementById('save-btn');
+  btn.textContent = '✅ 保存しました！';
+  btn.style.background = '#5a9a5a';
+  setTimeout(() => { btn.textContent = '💾 保存する'; btn.style.background = ''; }, 2000);
+}
+
+// ===== カレンダー画面 =====
+function renderTurtleChips() {
+  const container = document.getElementById('turtle-chips');
+  container.innerHTML = ALL_TURTLES.map(t => `
+    <button class="turtle-chip ${t.id === 'kuro' ? 'water-chip' : ''} ${t.id === selectedTurtle ? 'active' : ''}"
+      onclick="selectTurtle('${t.id}', this)">${t.name}</button>
+  `).join('');
+}
+
+function selectTurtle(id, el) {
+  selectedTurtle = id;
+  document.querySelectorAll('.turtle-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('detail-popup').classList.remove('show');
+  renderCalendar();
+}
+
+function changeMonth(delta) {
+  calMonth += delta;
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  document.getElementById('detail-popup').classList.remove('show');
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const isWater = selectedTurtle === 'kuro';
+  document.getElementById('cal-title').textContent =
+    `${calYear}年${calMonth + 1}月`;
+
+  const grid = document.getElementById('cal-grid');
+  const dows = ['日','月','火','水','木','金','土'];
+  let html = dows.map(d => `<div class="cal-dow">${d}</div>`).join('');
+
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const lastDate = new Date(calYear, calMonth + 1, 0).getDate();
+
+  for (let i = 0; i < firstDay; i++) html += `<div class="cal-day empty"></div>`;
+
+  for (let d = 1; d <= lastDate; d++) {
+    const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dayData = allData[dateStr];
+    const isToday = dateStr === todayStr;
+
+    let cls = 'cal-day';
+    if (isToday) cls += ' today';
+    let dotsHtml = '';
+
+    if (isWater) {
+      // クロ：ごはんの有無
+      let hasMorning = dayData?.morning?.kuro?.feed;
+      let hasNight   = dayData?.night?.kuro?.feed;
+      if (hasMorning === 'yes' || hasNight === 'yes') cls += ' feed-yes';
+      else if (hasMorning === 'no' || hasNight === 'no') cls += ' feed-no';
+      else if (dayData) cls += ' feed-none';
+
+      if (hasMorning || hasNight) {
+        dotsHtml = `<div class="dots">
+          <div class="dot" style="background:${dotColor(hasMorning, true)}"></div>
+          <div class="dot" style="background:${dotColor(hasNight, true)}"></div>
+        </div>`;
+      }
+    } else {
+      // リクガメ：うんちの有無
+      const mPoop = dayData?.morning?.[selectedTurtle]?.poop;
+      const nPoop = dayData?.night?.[selectedTurtle]?.poop;
+
+      if (mPoop === 'yes' || nPoop === 'yes') cls += ' all-good';
+      else if (mPoop === 'no' || nPoop === 'no') cls += ' no-poop';
+      else if (mPoop === 'none' && nPoop === 'none') cls += ' no-bath';
+      else if (dayData) cls += ' some-poop';
+
+      if (mPoop || nPoop) {
+        dotsHtml = `<div class="dots">
+          <div class="dot" style="background:${dotColor(mPoop, false)}"></div>
+          <div class="dot" style="background:${dotColor(nPoop, false)}"></div>
+        </div>`;
+      }
+    }
+
+    const hasMemo = dayData?.memo ? '<div class="memo-mark">📝</div>' : '';
+    html += `<div class="${cls}" onclick="showDetail('${dateStr}', ${d})" style="cursor:${dayData ? 'pointer' : 'default'}">
+      <span class="day-num">${d}</span>
+      ${dotsHtml}
+      ${hasMemo}
+    </div>`;
+  }
+
+  grid.innerHTML = html;
+
+  // 凡例
+  const legend = document.getElementById('cal-legend');
+  if (isWater) {
+    legend.innerHTML = `
+      <div class="legend-item"><div class="legend-dot" style="background:#d4e8f2"></div>ごはんあり</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fde8e4"></div>ごはんなし</div>
+    `;
+  } else {
+    legend.innerHTML = `
+      <div class="legend-item"><div class="legend-dot" style="background:#e8f5e8"></div>うんちあり</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fde8e4"></div>うんちなし</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f0ede6"></div>温浴なし</div>
+      <div class="legend-item"><span style="font-size:0.65rem">左ドット＝朝 右ドット＝夜</span></div>
+    `;
+  }
+}
+
+function dotColor(val, isWater) {
+  if (val === 'yes') return isWater ? '#7aabc0' : '#7aab7a';
+  if (val === 'no')  return '#e07a5f';
+  if (val === 'none') return '#c0b8a8';
+  return '#e0dcd6';
+}
+
+function showDetail(dateStr, d) {
+  const dayData = allData[dateStr];
+  if (!dayData) return;
+
+  const popup = document.getElementById('detail-popup');
+  const turtle = ALL_TURTLES.find(t => t.id === selectedTurtle);
+  document.getElementById('detail-title').textContent =
+    `${calYear}年${calMonth+1}月${d}日 — ${turtle.name}`;
+
+  const isWater = selectedTurtle === 'kuro';
+  let html = '';
+
+  ['morning', 'night'].forEach(ses => {
+    const label = ses === 'morning' ? '🌅 朝' : '🌙 夜';
+    const d2 = dayData[ses]?.[selectedTurtle];
+    if (!d2) return;
+
+    if (isWater) {
+      html += `<div class="detail-row"><span>${label} ごはん</span>${tagHtml(d2.feed, true)}</div>`;
+    } else {
+      html += `<div class="detail-row"><span>${label} うんち</span>${tagHtml(d2.poop)}</div>`;
+      html += `<div class="detail-row"><span>${label} 尿酸</span>${tagHtml(d2.urate)}</div>`;
+    }
+  });
+
+  // メモがあれば表示
+  const memo = allData[dateStr]?.memo;
+  if (memo) {
+    html += `<div class="detail-row" style="flex-direction:column; align-items:flex-start; gap:4px">
+      <span>📝 メモ</span>
+      <span style="font-size:0.78rem; color:var(--text-muted); white-space:pre-wrap">${memo}</span>
+    </div>`;
+  }
+
+  document.getElementById('detail-body').innerHTML = html || '<div style="font-size:0.8rem;color:var(--text-muted)">記録なし</div>';
+  popup.classList.add('show');
+}
+
+function tagHtml(val, isWater = false) {
+  if (val === 'yes')  return `<span class="tag tag-yes">${isWater ? 'あげた' : 'あり'}</span>`;
+  if (val === 'no')   return `<span class="tag tag-no">なし</span>`;
+  if (val === 'none') return `<span class="tag tag-none">温浴なし</span>`;
+  return '<span class="tag tag-none">未記録</span>';
+}
+
+function toDateStr(date) {
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+}
+
+// ===== ビュー切替 =====
+function showView(view, el) {
+  document.getElementById('view-record').style.display = view === 'record' ? '' : 'none';
+  const calEl = document.getElementById('view-calendar');
+  calEl.classList.toggle('visible', view === 'calendar');
+  document.getElementById('save-btn').style.display = view === 'record' ? '' : 'none';
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+init();
+</script>
+</body>
+</html>
