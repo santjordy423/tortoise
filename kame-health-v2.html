@@ -691,6 +691,9 @@ async function saveToJsonBin() {
 }
 
 async function createNewBin() {
+  // 入力欄から直接取得（設定保存前でも動作するように）
+  jbConfig.apiKey = document.getElementById('jb-api-key').value.trim();
+  jbConfig.binId  = document.getElementById('jb-bin-id').value.trim();
   if (!jbConfig.apiKey) { setSyncStatus('APIキーを入力してください', true); return; }
   try {
     setSyncStatus('📦 新規作成中...');
@@ -716,6 +719,9 @@ async function createNewBin() {
 }
 
 async function syncFromCloud() {
+  // 入力欄から直接取得
+  jbConfig.apiKey = document.getElementById('jb-api-key').value.trim();
+  jbConfig.binId  = document.getElementById('jb-bin-id').value.trim();
   const loaded = await loadFromJsonBin();
   if (loaded) {
     localStorage.setItem('kameData', JSON.stringify(allData));
