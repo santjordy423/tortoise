@@ -710,7 +710,10 @@ async function createNewBin() {
       },
       body: JSON.stringify(allData)
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`HTTP ${res.status}: ${errText}`);
+    }
     const json = await res.json();
     jbConfig.binId = json.metadata.id;
     document.getElementById('jb-bin-id').value = jbConfig.binId;
