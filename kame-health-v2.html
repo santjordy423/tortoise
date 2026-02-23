@@ -637,8 +637,7 @@ function loadJbConfig() {
 }
 
 function saveJbConfig() {
-  jbConfig.apiKey = document.getElementById('jb-api-key').value.trim();
-  jbConfig.binId  = document.getElementById('jb-bin-id').value.trim();
+  readInputs();
   localStorage.setItem('kameJsonBin', JSON.stringify(jbConfig));
   setSyncStatus('設定を保存しました ✅');
 }
@@ -690,10 +689,15 @@ async function saveToJsonBin() {
   }
 }
 
+function readInputs() {
+  // 非ASCII文字（ゼロ幅スペース等）を除去してから取得
+  jbConfig.apiKey = document.getElementById('jb-api-key').value.replace(/[^\x20-\x7E]/g, '').trim();
+  jbConfig.binId  = document.getElementById('jb-bin-id').value.replace(/[^\x20-\x7E]/g, '').trim();
+}
+
 async function createNewBin() {
   // 入力欄から直接取得（設定保存前でも動作するように）
-  jbConfig.apiKey = document.getElementById('jb-api-key').value.trim();
-  jbConfig.binId  = document.getElementById('jb-bin-id').value.trim();
+  readInputs();
   if (!jbConfig.apiKey) { setSyncStatus('APIキーを入力してください', true); return; }
   try {
     setSyncStatus('📦 新規作成中...');
@@ -718,9 +722,7 @@ async function createNewBin() {
 }
 
 async function syncFromCloud() {
-  // 入力欄から直接取得
-  jbConfig.apiKey = document.getElementById('jb-api-key').value.trim();
-  jbConfig.binId  = document.getElementById('jb-bin-id').value.trim();
+  readInputs();
   const loaded = await loadFromJsonBin();
   if (loaded) {
     localStorage.setItem('kameData', JSON.stringify(allData));
