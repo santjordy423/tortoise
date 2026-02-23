@@ -702,8 +702,7 @@ async function createNewBin() {
       headers: {
         'Content-Type': 'application/json',
         'X-Master-Key': jbConfig.apiKey,
-        'X-Bin-Name': 'kame-health-data',
-        'X-Bin-Private': 'true'
+        'X-Bin-Name': 'kame-health-data'
       },
       body: JSON.stringify(allData)
     });
