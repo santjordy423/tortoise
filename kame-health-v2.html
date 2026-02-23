@@ -708,7 +708,7 @@ async function createNewBin() {
         'X-Master-Key': jbConfig.apiKey,
         'X-Bin-Name': 'kame-health-data'
       },
-      body: JSON.stringify(allData)
+      body: JSON.stringify(Object.keys(allData).length > 0 ? allData : { _init: true })
     });
     if (!res.ok) {
       const errText = await res.text();
