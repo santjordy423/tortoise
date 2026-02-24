@@ -814,6 +814,11 @@
     </div><!-- /measure-tab-record -->
 
     <div id="measure-tab-graph" style="display:none">
+      <div class="session-tabs" style="margin-bottom:12px">
+        <button class="tab active" onclick="setMeasurePeriod(6, this)">直近6ヶ月</button>
+        <button class="tab" onclick="setMeasurePeriod(12, this)">1年</button>
+        <button class="tab" onclick="setMeasurePeriod(0, this)">全期間</button>
+      </div>
       <div class="calendar-card" style="padding:16px">
         <div id="measure-chart-placeholder" style="text-align:center; padding:30px 0; color:var(--text-muted); font-size:0.85rem">まだ記録がありません</div>
         <canvas id="measure-chart" style="display:none"></canvas>
@@ -1657,6 +1662,14 @@ async function saveMeasurement() {
 
 // ===== 体測グラフ =====
 let measureChart = null;
+let measurePeriod = 6; // 表示月数（0=全期間）
+
+function setMeasurePeriod(n, el) {
+  measurePeriod = n;
+  document.querySelectorAll('#measure-tab-graph .session-tabs .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderMeasureGraph();
+}
 
 function showMeasureTab(tab, el) {
   document.getElementById('measure-tab-record').style.display = tab === 'record' ? '' : 'none';
@@ -1668,7 +1681,8 @@ function showMeasureTab(tab, el) {
 
 function renderMeasureGraph() {
   const turtleMeasures = allData._measurements?.[selectedMeasureTurtle] || {};
-  const months = Object.keys(turtleMeasures).sort(); // oldest first
+  const allMonths = Object.keys(turtleMeasures).sort(); // oldest first
+  const months = measurePeriod > 0 ? allMonths.slice(-measurePeriod) : allMonths;
 
   const placeholder = document.getElementById('measure-chart-placeholder');
   const canvas      = document.getElementById('measure-chart');
