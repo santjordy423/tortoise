@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>体測データ一括インポート</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐢</text></svg>">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap">
+<style>
+  :root {
+    --bg: #f0ede6;
+    --card: #faf8f4;
+    --green: #7aab7a;
+    --sand: #d4b896;
+    --water: #7aabc0;
+    --text: #4a3f35;
+    --text-muted: #9a8a7a;
+    --radius: 16px;
+    --shadow: 0 2px 12px rgba(74,63,53,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Zen Maru Gothic', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px 16px 60px;
+  }
+  h1 {
+    font-size: 1.3rem;
+    margin-bottom: 4px;
+  }
+  .subtitle {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+  }
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .step-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--sand);
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+  .card h2 {
+    font-size: 1rem;
+    margin-bottom: 12px;
+  }
+
+  /* ファイル選択エリア */
+  .drop-zone {
+    border: 2px dashed var(--sand);
+    border-radius: 12px;
+    padding: 32px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.2s;
+    position: relative;
+  }
+  .drop-zone:hover { background: #f5f0e8; }
+  .drop-zone input[type=file] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .drop-icon { font-size: 2.5rem; margin-bottom: 8px; }
+  .drop-text { font-size: 0.9rem; color: var(--text-muted); }
+  .drop-text strong { color: var(--text); }
+
+  /* 注意書き */
+  .note {
+    background: #fff8e8;
+    border-left: 4px solid var(--sand);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin-top: 12px;
+    line-height: 1.6;
+  }
+  .note strong { color: var(--text); }
+
+  /* プレビューカード（最初は非表示） */
+  #preview-section { display: none; }
+
+  .turtle-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .turtle-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--bg);
+    border-radius: 10px;
+    font-size: 0.88rem;
+  }
+  .turtle-row .name {
+    font-weight: 700;
+    min-width: 70px;
+  }
+  .turtle-row .count {
+    color: var(--green);
+    font-weight: 700;
+  }
+  .turtle-row .range {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    margin-left: auto;
+  }
+  .turtle-row.no-data {
+    opacity: 0.4;
+  }
+  .turtle-row.no-data .count {
+    color: var(--text-muted);
+  }
+
+  /* ボタン */
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-primary {
+    background: var(--green);
+    color: white;
+  }
+  .btn-primary:hover { background: #5a9a5a; }
+  .btn-primary:disabled {
+    background: #b0c8b0;
+    cursor: not-allowed;
+  }
+
+  /* 結果メッセージ */
+  #result-section { display: none; }
+  .result-box {
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+  }
+  .result-box.success {
+    background: #e8f5e8;
+    border: 2px solid var(--green);
+  }
+  .result-box.error {
+    background: #fde8e8;
+    border: 2px solid #e07a5f;
+  }
+  .result-icon { font-size: 2.5rem; margin-bottom: 8px; }
+  .result-text { font-size: 0.95rem; line-height: 1.6; }
+  .result-text a {
+    color: var(--green);
+    font-weight: 700;
+  }
+
+  /* JsonBin状態 */
+  #sync-status {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 8px;
+    text-align: center;
+    min-height: 1.2em;
+  }
+</style>
+</head>
+<body>
+
+<h1>🐢 体測データ一括インポート</h1>
+<p class="subtitle">ExcelのCSVファイルから体測データをまとめて取り込みます</p>
+
+<!-- STEP 1: ファイル選択 -->
+<div class="card">
+  <div class="step-label">Step 1</div>
+  <h2>CSVファイルを選択</h2>
+  <div class="drop-zone" id="drop-zone">
+    <input type="file" id="csv-file" accept=".csv">
+    <div class="drop-icon">📂</div>
+    <div class="drop-text"><strong>クリックしてCSVを選択</strong></div>
+  </div>
+  <div class="note">
+    <strong>事前準備：</strong>Excelファイルを開いて「ファイル → 名前を付けて保存」で
+    <strong>「CSV（コンマ区切り）」</strong>形式で保存してください。<br>
+    ヘッダー2行はそのままでOKです。
+  </div>
+</div>
+
+<!-- STEP 2: プレビュー -->
+<div class="card" id="preview-section">
+  <div class="step-label">Step 2</div>
+  <h2>取り込み内容を確認</h2>
+  <div class="turtle-summary" id="turtle-summary"></div>
+</div>
+
+<!-- STEP 3: インポート実行 -->
+<div class="card" id="import-section" style="display:none;">
+  <div class="step-label">Step 3</div>
+  <h2>インポート実行</h2>
+  <button class="btn btn-primary" id="import-btn" onclick="doImport()">
+    💾 インポートする
+  </button>
+  <div id="sync-status"></div>
+</div>
+
+<!-- 結果 -->
+<div class="card" id="result-section">
+  <div class="result-box" id="result-box">
+    <div class="result-icon" id="result-icon"></div>
+    <div class="result-text" id="result-text"></div>
+  </div>
+</div>
+
+<script>
+// ===== カメ名 → ID マッピング =====
+const TURTLE_NAME_MAP = {
+  'マイケル': 'michael',
+  'リリー':   'lily',
+  'ラム':     'ram',
+  'ナロー':   'narrow',
+  'トゥイ':   'tui',
+  'クロ':     'kuro',
+  'カメ蔵':   'kamezo'
+};
+
+// 表示名（逆引き用）
+const TURTLE_DISPLAY = {
+  michael: 'マイケル',
+  lily:    'リリー',
+  ram:     'ラム',
+  narrow:  'ナロー',
+  tui:     'トゥイ',
+  kuro:    'クロ',
+  kamezo:  'かめぞう（カメ蔵）'
+};
+
+const MEASURE_KEY_MAP = {
+  '背甲長': 'length',
+  '背甲幅': 'width',
+  '体重':   'weight',
+  '背甲高': 'height'
+};
+
+let parsedMeasurements = null; // パース結果を保持
+
+// ===== CSV 1行のパース（クォート対応） =====
+function parseCSVLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      if (inQuotes && line[i + 1] === '"') { current += '"'; i++; }
+      else { inQuotes = !inQuotes; }
+    } else if (c === ',' && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += c;
+    }
+  }
+  result.push(current.trim());
+  return result;
+}
+
+// ===== CSVテキスト全体のパース =====
+function parseCSV(text) {
+  // BOM除去・改行統一
+  text = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+  const lines = text.split('\n').filter(l => l.trim() !== '');
+  if (lines.length < 3) {
+    throw new Error('データが少なすぎます（ヘッダー2行＋データ行が必要です）');
+  }
+
+  const row1 = parseCSVLine(lines[0]); // カメ名行
+  const row2 = parseCSVLine(lines[1]); // 項目名行
+
+  // 列マッピングを構築
+  const colMap = []; // colMap[i] = { turtleId, measureKey }
+  let currentTurtle = null;
+  for (let i = 0; i < Math.max(row1.length, row2.length); i++) {
+    const cell1 = (row1[i] || '').trim();
+    const cell2 = (row2[i] || '').trim();
+    if (cell1 && TURTLE_NAME_MAP[cell1]) {
+      currentTurtle = TURTLE_NAME_MAP[cell1];
+    }
+    const measureKey = MEASURE_KEY_MAP[cell2];
+    if (currentTurtle && measureKey) {
+      colMap[i] = { turtleId: currentTurtle, measureKey };
+    }
+  }
+
+  if (!colMap.some(Boolean)) {
+    throw new Error('カメ名や項目名が認識できませんでした。ヘッダー行を確認してください。');
+  }
+
+  // データ行をパース
+  const measurements = {};
+  let parsedCount = 0;
+
+  for (let r = 2; r < lines.length; r++) {
+    const row = parseCSVLine(lines[r]);
+    const dateStr = (row[0] || '').trim();
+    if (!dateStr) continue;
+
+    // 日付パース: "2026/2/1" → "2026-02"
+    const dateParts = dateStr.split('/');
+    if (dateParts.length < 2) continue;
+    const year  = dateParts[0].trim();
+    const month = dateParts[1].trim().padStart(2, '0');
+    if (!/^\d{4}$/.test(year) || !/^\d{2}$/.test(month)) continue;
+    const monthKey = `${year}-${month}`;
+
+    for (let c = 0; c < row.length; c++) {
+      if (!colMap[c] || row[c] === '') continue;
+      const { turtleId, measureKey } = colMap[c];
+      const val = parseFloat(row[c]);
+      if (isNaN(val)) continue;
+
+      if (!measurements[turtleId]) measurements[turtleId] = {};
+      if (!measurements[turtleId][monthKey]) measurements[turtleId][monthKey] = {};
+      measurements[turtleId][monthKey][measureKey] = val;
+      parsedCount++;
+    }
+  }
+
+  if (parsedCount === 0) {
+    throw new Error('数値データが見つかりませんでした。CSV内容を確認してください。');
+  }
+
+  return measurements;
+}
+
+// ===== ファイル選択イベント =====
+document.getElementById('csv-file').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  // ファイル名を表示
+  document.querySelector('.drop-text').innerHTML =
+    `<strong>✅ ${file.name}</strong>`;
+
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      parsedMeasurements = parseCSV(ev.target.result);
+      showPreview(parsedMeasurements);
+    } catch (err) {
+      showError('CSVの読み込みに失敗しました: ' + err.message);
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+});
+
+// ===== プレビュー表示 =====
+function showPreview(measurements) {
+  const order = ['michael', 'lily', 'ram', 'narrow', 'tui', 'kuro', 'kamezo'];
+  const summaryEl = document.getElementById('turtle-summary');
+  summaryEl.innerHTML = '';
+
+  order.forEach(id => {
+    const data = measurements[id];
+    const row = document.createElement('div');
+    if (!data || Object.keys(data).length === 0) {
+      row.className = 'turtle-row no-data';
+      row.innerHTML = `
+        <span class="name">${TURTLE_DISPLAY[id]}</span>
+        <span class="count">データなし</span>
+      `;
+    } else {
+      const months = Object.keys(data).sort();
+      const count  = months.length;
+      const first  = months[0];
+      const last   = months[months.length - 1];
+      row.className = 'turtle-row';
+      row.innerHTML = `
+        <span class="name">${TURTLE_DISPLAY[id]}</span>
+        <span class="count">${count}件</span>
+        <span class="range">${first} 〜 ${last}</span>
+      `;
+    }
+    summaryEl.appendChild(row);
+  });
+
+  document.getElementById('preview-section').style.display = '';
+  document.getElementById('import-section').style.display  = '';
+  document.getElementById('result-section').style.display  = 'none';
+}
+
+// ===== インポート実行 =====
+async function doImport() {
+  if (!parsedMeasurements) return;
+
+  const btn = document.getElementById('import-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ 処理中...';
+  setSyncStatus('');
+
+  try {
+    // 既存データを読み込む
+    const existing = JSON.parse(localStorage.getItem('kameData') || '{}');
+    if (!existing._measurements) existing._measurements = {};
+
+    // マージ（既存データは上書き）
+    let totalImported = 0;
+    for (const [turtleId, months] of Object.entries(parsedMeasurements)) {
+      if (!existing._measurements[turtleId]) existing._measurements[turtleId] = {};
+      for (const [month, entry] of Object.entries(months)) {
+        existing._measurements[turtleId][month] = entry;
+        totalImported++;
+      }
+    }
+
+    // localStorageに保存
+    localStorage.setItem('kameData', JSON.stringify(existing));
+
+    // JsonBinにも保存（設定があれば）
+    const jbRaw = localStorage.getItem('kameJsonBin');
+    if (jbRaw) {
+      const jbConfig = JSON.parse(jbRaw);
+      if (jbConfig.binId && jbConfig.apiKey) {
+        setSyncStatus('☁️ クラウドにも保存中...');
+        try {
+          const res = await fetch(`https://api.jsonbin.io/v3/b/${jbConfig.binId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Master-Key': jbConfig.apiKey
+            },
+            body: JSON.stringify(existing)
+          });
+          if (res.ok) {
+            setSyncStatus('☁️ クラウド保存完了 ✅');
+          } else {
+            setSyncStatus('⚠️ クラウド保存失敗（ローカルには保存済み）');
+          }
+        } catch (e) {
+          setSyncStatus('⚠️ クラウド保存失敗（ローカルには保存済み）');
+        }
+      }
+    }
+
+    // 成功表示
+    showSuccess(totalImported);
+
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = '💾 インポートする';
+    showError('インポート中にエラーが発生しました: ' + err.message);
+  }
+}
+
+function setSyncStatus(msg) {
+  document.getElementById('sync-status').textContent = msg;
+}
+
+function showSuccess(count) {
+  const el = document.getElementById('result-section');
+  el.style.display = '';
+  document.getElementById('result-box').className = 'result-box success';
+  document.getElementById('result-icon').textContent = '🎉';
+  document.getElementById('result-text').innerHTML =
+    `<strong>${count}件</strong>のデータを取り込みました！<br><br>` +
+    `<a href="kame-health-v2.html">かめの記録帳を開く →</a>`;
+  el.scrollIntoView({ behavior: 'smooth' });
+}
+
+function showError(msg) {
+  const el = document.getElementById('result-section');
+  el.style.display = '';
+  document.getElementById('result-box').className = 'result-box error';
+  document.getElementById('result-icon').textContent = '❌';
+  document.getElementById('result-text').textContent = msg;
+  el.scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
