@@ -510,6 +510,140 @@
   .tag-yes { background: var(--green-light); color: var(--green); }
   .tag-no { background: #fde8e4; color: var(--no); }
   .tag-none { background: #eae8e4; color: var(--none-color); }
+
+  /* ===== 体測画面 ===== */
+  #view-measure { display: none; }
+
+  .measure-form {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .measure-month-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .measure-month-label {
+    font-family: 'Kaisei Opti', serif;
+    font-size: 1.05rem;
+    min-width: 110px;
+    text-align: center;
+  }
+
+  .measure-input-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .measure-input-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .measure-input-item label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-muted);
+  }
+
+  .measure-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .measure-input-wrap input {
+    flex: 1;
+    min-width: 0;
+    border: 2px solid #e0dcd6;
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: 0.9rem;
+    color: var(--text);
+    background: var(--bg);
+    outline: none;
+    width: 100%;
+  }
+
+  .measure-input-wrap input:focus { border-color: var(--sand); }
+
+  .unit {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  .measure-save-btn {
+    width: 100%;
+    padding: 12px;
+    background: var(--sand);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .measure-save-btn:hover { opacity: 0.9; }
+
+  .measure-history-item {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 12px 14px;
+    margin-bottom: 8px;
+  }
+
+  .measure-history-month {
+    font-weight: 700;
+    font-size: 0.85rem;
+    margin-bottom: 8px;
+    color: var(--sand);
+    font-family: 'Kaisei Opti', serif;
+  }
+
+  .measure-history-values {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+  }
+
+  .measure-value-cell { text-align: center; }
+
+  .measure-value-label {
+    font-size: 0.62rem;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+  }
+
+  .measure-value-num {
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  .measure-value-unit {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+  }
+
+  .measure-diff { font-size: 0.62rem; margin-top: 1px; }
+  .diff-up   { color: var(--green); }
+  .diff-down { color: var(--no); }
+  .diff-zero { color: var(--text-muted); }
 </style>
 </head>
 <body>
@@ -544,6 +678,7 @@
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="showView('record', this)">📝 記録する</button>
     <button class="nav-tab" onclick="showView('calendar', this)">📅 カレンダー</button>
+    <button class="nav-tab" onclick="showView('measure', this)">📏 体測</button>
   </div>
 </header>
 
@@ -621,10 +756,77 @@
     </div>
   </div>
 
+  <!-- ===== 体測画面 ===== -->
+  <div id="view-measure">
+    <div class="turtle-selector" id="measure-turtle-chips"></div>
+
+    <div class="session-tabs" id="measure-subtabs" style="margin-bottom:12px">
+      <button class="tab active" onclick="showMeasureTab('record', this)">📝 記録</button>
+      <button class="tab" onclick="showMeasureTab('graph', this)">📈 グラフ</button>
+    </div>
+
+    <div id="measure-tab-record">
+
+    <div class="measure-form">
+      <div class="measure-month-nav">
+        <button class="cal-nav" onclick="changeMeasureMonth(-1)">‹</button>
+        <div class="measure-month-label" id="measure-month-label"></div>
+        <button class="cal-nav" onclick="changeMeasureMonth(1)">›</button>
+      </div>
+
+      <div class="measure-input-grid">
+        <div class="measure-input-item">
+          <label>体重</label>
+          <div class="measure-input-wrap">
+            <input type="number" id="m-weight" placeholder="0.0" step="0.1" min="0">
+            <span class="unit">g</span>
+          </div>
+        </div>
+        <div class="measure-input-item">
+          <label>背甲長</label>
+          <div class="measure-input-wrap">
+            <input type="number" id="m-length" placeholder="0.0" step="0.1" min="0">
+            <span class="unit">mm</span>
+          </div>
+        </div>
+        <div class="measure-input-item">
+          <label>背甲幅</label>
+          <div class="measure-input-wrap">
+            <input type="number" id="m-width" placeholder="0.0" step="0.1" min="0">
+            <span class="unit">mm</span>
+          </div>
+        </div>
+        <div class="measure-input-item">
+          <label>高さ</label>
+          <div class="measure-input-wrap">
+            <input type="number" id="m-height" placeholder="0.0" step="0.1" min="0">
+            <span class="unit">mm</span>
+          </div>
+        </div>
+      </div>
+
+      <button onclick="saveMeasurement()" class="measure-save-btn">💾 記録する</button>
+    </div>
+
+    <div class="section-label">📋 過去の記録</div>
+    <div id="measure-history"></div>
+
+    </div><!-- /measure-tab-record -->
+
+    <div id="measure-tab-graph" style="display:none">
+      <div class="calendar-card" style="padding:16px">
+        <div id="measure-chart-placeholder" style="text-align:center; padding:30px 0; color:var(--text-muted); font-size:0.85rem">まだ記録がありません</div>
+        <canvas id="measure-chart" style="display:none"></canvas>
+      </div>
+    </div>
+
+  </div>
+
 </main>
 
 <button class="save-btn" id="save-btn" onclick="save()">💾 保存する</button>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 
 // ===== JSONBin連携 =====
@@ -735,6 +937,7 @@ async function syncFromCloud() {
     restoreRecordUI();
     if (allData[todayStr]?.memo) document.getElementById('daily-memo').value = allData[todayStr].memo;
     renderCalendar();
+    renderMeasureHistory();
   }
 }
 
@@ -1287,9 +1490,309 @@ function showView(view, el) {
   document.getElementById('view-record').style.display = view === 'record' ? '' : 'none';
   const calEl = document.getElementById('view-calendar');
   calEl.classList.toggle('visible', view === 'calendar');
+  document.getElementById('view-measure').style.display = view === 'measure' ? '' : 'none';
   document.getElementById('save-btn').style.display = view === 'record' ? '' : 'none';
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
+  if (view === 'measure') renderMeasureView();
+}
+
+// ===== 体測画面 =====
+let selectedMeasureTurtle = ALL_TURTLES[0].id;
+let measureYear = today.getFullYear();
+let measureMonth = today.getMonth() + 1; // 1-12
+
+function renderMeasureTurtleChips() {
+  const container = document.getElementById('measure-turtle-chips');
+  container.innerHTML = ALL_TURTLES.map(t => `
+    <button class="turtle-chip ${t.id === 'kuro' ? 'water-chip' : ''} ${t.id === selectedMeasureTurtle ? 'active' : ''}"
+      onclick="selectMeasureTurtle('${t.id}', this)">${t.name}</button>
+  `).join('');
+}
+
+function selectMeasureTurtle(id, el) {
+  selectedMeasureTurtle = id;
+  document.querySelectorAll('#measure-turtle-chips .turtle-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderMeasureForm();
+  renderMeasureHistory();
+  if (document.getElementById('measure-tab-graph').style.display !== 'none') {
+    renderMeasureGraph();
+  }
+}
+
+function changeMeasureMonth(delta) {
+  measureMonth += delta;
+  if (measureMonth < 1) { measureMonth = 12; measureYear--; }
+  if (measureMonth > 12) { measureMonth = 1; measureYear++; }
+  renderMeasureForm();
+}
+
+function getMeasureMonthKey() {
+  return `${measureYear}-${String(measureMonth).padStart(2, '0')}`;
+}
+
+function renderMeasureForm() {
+  const label = document.getElementById('measure-month-label');
+  if (label) label.textContent = `${measureYear}年${measureMonth}月`;
+
+  const key = getMeasureMonthKey();
+  const data = allData._measurements?.[selectedMeasureTurtle]?.[key] || {};
+
+  const w  = document.getElementById('m-weight');
+  const l  = document.getElementById('m-length');
+  const wi = document.getElementById('m-width');
+  const h  = document.getElementById('m-height');
+
+  if (w)  w.value  = data.weight ?? '';
+  if (l)  l.value  = data.length ?? '';
+  if (wi) wi.value = data.width  ?? '';
+  if (h)  h.value  = data.height ?? '';
+}
+
+function renderMeasureHistory() {
+  const container = document.getElementById('measure-history');
+  if (!container) return;
+
+  const turtleMeasures = allData._measurements?.[selectedMeasureTurtle] || {};
+  const allMonths = Object.keys(turtleMeasures).sort(); // oldest first
+  const months    = [...allMonths].reverse();            // newest first (for display)
+
+  if (months.length === 0) {
+    container.innerHTML = '<div style="text-align:center; color:var(--text-muted); font-size:0.85rem; padding:20px">まだ記録がありません</div>';
+    return;
+  }
+
+  container.innerHTML = months.map(monthKey => {
+    const d   = turtleMeasures[monthKey];
+    const idx = allMonths.indexOf(monthKey);
+    const prevKey = idx > 0 ? allMonths[idx - 1] : null;
+    const prev    = prevKey ? turtleMeasures[prevKey] : null;
+    const [y, m]  = monthKey.split('-');
+
+    function diffHtml(field) {
+      if (!prev || d[field] == null || prev[field] == null) return '';
+      const delta = parseFloat(d[field]) - parseFloat(prev[field]);
+      const sign = delta > 0 ? '+' : '';
+      const cls  = delta > 0 ? 'diff-up' : delta < 0 ? 'diff-down' : 'diff-zero';
+      return `<div class="measure-diff ${cls}">${sign}${delta.toFixed(1)}</div>`;
+    }
+
+    function cellHtml(field, unit) {
+      const val = d[field];
+      if (val == null) return '<div class="measure-value-cell"><div class="measure-value-num" style="color:var(--text-muted)">—</div></div>';
+      return `<div class="measure-value-cell">
+        <div class="measure-value-num">${parseFloat(val).toFixed(1)}<span class="measure-value-unit">${unit}</span></div>
+        ${diffHtml(field)}
+      </div>`;
+    }
+
+    return `
+      <div class="measure-history-item" onclick="editMeasureEntry('${monthKey}')" style="cursor:pointer">
+        <div class="measure-history-month">${y}年${parseInt(m)}月</div>
+        <div class="measure-history-values" style="margin-bottom:4px">
+          <div class="measure-value-cell"><div class="measure-value-label">体重</div></div>
+          <div class="measure-value-cell"><div class="measure-value-label">背甲長</div></div>
+          <div class="measure-value-cell"><div class="measure-value-label">背甲幅</div></div>
+          <div class="measure-value-cell"><div class="measure-value-label">高さ</div></div>
+        </div>
+        <div class="measure-history-values">
+          ${cellHtml('weight', 'g')}
+          ${cellHtml('length', 'mm')}
+          ${cellHtml('width',  'mm')}
+          ${cellHtml('height', 'mm')}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function editMeasureEntry(monthKey) {
+  const [y, m] = monthKey.split('-');
+  measureYear  = parseInt(y);
+  measureMonth = parseInt(m);
+  renderMeasureForm();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function saveMeasurement() {
+  const weight = document.getElementById('m-weight').value;
+  const length = document.getElementById('m-length').value;
+  const width  = document.getElementById('m-width').value;
+  const height = document.getElementById('m-height').value;
+
+  const key = getMeasureMonthKey();
+
+  if (!weight && !length && !width && !height) {
+    // 全部空なら該当月のデータを削除
+    if (allData._measurements?.[selectedMeasureTurtle]?.[key]) {
+      delete allData._measurements[selectedMeasureTurtle][key];
+      localStorage.setItem('kameData', JSON.stringify(allData));
+      renderMeasureHistory();
+    }
+    return;
+  }
+
+  if (!allData._measurements) allData._measurements = {};
+  if (!allData._measurements[selectedMeasureTurtle]) allData._measurements[selectedMeasureTurtle] = {};
+
+  const entry = {};
+  if (weight !== '') entry.weight = parseFloat(weight);
+  if (length !== '') entry.length = parseFloat(length);
+  if (width  !== '') entry.width  = parseFloat(width);
+  if (height !== '') entry.height = parseFloat(height);
+
+  allData._measurements[selectedMeasureTurtle][key] = entry;
+
+  localStorage.setItem('kameData', JSON.stringify(allData));
+  renderMeasureHistory();
+
+  await saveToJsonBin();
+
+  const btn = document.querySelector('.measure-save-btn');
+  btn.textContent = '✅ 記録しました！';
+  btn.style.background = '#5a9a5a';
+  setTimeout(() => { btn.textContent = '💾 記録する'; btn.style.background = ''; }, 2000);
+}
+
+// ===== 体測グラフ =====
+let measureChart = null;
+
+function showMeasureTab(tab, el) {
+  document.getElementById('measure-tab-record').style.display = tab === 'record' ? '' : 'none';
+  document.getElementById('measure-tab-graph').style.display  = tab === 'graph'  ? '' : 'none';
+  document.querySelectorAll('#measure-subtabs .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  if (tab === 'graph') renderMeasureGraph();
+}
+
+function renderMeasureGraph() {
+  const turtleMeasures = allData._measurements?.[selectedMeasureTurtle] || {};
+  const months = Object.keys(turtleMeasures).sort(); // oldest first
+
+  const placeholder = document.getElementById('measure-chart-placeholder');
+  const canvas      = document.getElementById('measure-chart');
+
+  if (months.length === 0) {
+    placeholder.style.display = '';
+    canvas.style.display = 'none';
+    if (measureChart) { measureChart.destroy(); measureChart = null; }
+    return;
+  }
+
+  placeholder.style.display = 'none';
+  canvas.style.display = '';
+
+  const labels = months.map(m => {
+    const [y, mo] = m.split('-');
+    return `${y}/${parseInt(mo)}`;
+  });
+
+  const datasets = [
+    {
+      label: '背甲長',
+      data: months.map(m => turtleMeasures[m]?.length ?? null),
+      borderColor: '#7aab7a',
+      backgroundColor: 'rgba(122,171,122,0.12)',
+      yAxisID: 'ymm',
+      tension: 0.3,
+      spanGaps: true,
+      pointRadius: 5,
+      pointHoverRadius: 7,
+    },
+    {
+      label: '背甲幅',
+      data: months.map(m => turtleMeasures[m]?.width ?? null),
+      borderColor: '#7aabc0',
+      backgroundColor: 'rgba(122,171,192,0.12)',
+      yAxisID: 'ymm',
+      tension: 0.3,
+      spanGaps: true,
+      pointRadius: 5,
+      pointHoverRadius: 7,
+    },
+    {
+      label: '高さ',
+      data: months.map(m => turtleMeasures[m]?.height ?? null),
+      borderColor: '#c088c0',
+      backgroundColor: 'rgba(192,136,192,0.12)',
+      yAxisID: 'ymm',
+      tension: 0.3,
+      spanGaps: true,
+      pointRadius: 5,
+      pointHoverRadius: 7,
+    },
+    {
+      label: '体重',
+      data: months.map(m => turtleMeasures[m]?.weight ?? null),
+      borderColor: '#d4a870',
+      backgroundColor: 'rgba(212,168,112,0.12)',
+      yAxisID: 'yg',
+      tension: 0.3,
+      spanGaps: true,
+      pointRadius: 5,
+      pointHoverRadius: 7,
+      borderDash: [5, 3],
+    },
+  ];
+
+  if (measureChart) measureChart.destroy();
+
+  const ctx = canvas.getContext('2d');
+  measureChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: {
+            font: { family: "'Zen Maru Gothic', sans-serif", size: 11 },
+            color: '#4a3f35',
+            usePointStyle: true,
+            padding: 12,
+          },
+        },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              if (ctx.parsed.y === null) return null;
+              const unit = ctx.dataset.yAxisID === 'yg' ? 'g' : 'mm';
+              return ` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}${unit}`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          ticks: { font: { family: "'Zen Maru Gothic', sans-serif", size: 10 }, color: '#9a8a7a' },
+          grid: { color: '#e8e0d8' },
+        },
+        ymm: {
+          type: 'linear',
+          position: 'left',
+          title: { display: true, text: 'mm', font: { size: 10 }, color: '#9a8a7a' },
+          ticks: { font: { family: "'Zen Maru Gothic', sans-serif", size: 10 }, color: '#9a8a7a' },
+          grid: { color: '#e8e0d8' },
+        },
+        yg: {
+          type: 'linear',
+          position: 'right',
+          title: { display: true, text: 'g', font: { size: 10 }, color: '#9a8a7a' },
+          ticks: { font: { family: "'Zen Maru Gothic', sans-serif", size: 10 }, color: '#9a8a7a' },
+          grid: { drawOnChartArea: false },
+        },
+      },
+    },
+  });
+}
+
+function renderMeasureView() {
+  renderMeasureTurtleChips();
+  renderMeasureForm();
+  renderMeasureHistory();
 }
 
 init();
