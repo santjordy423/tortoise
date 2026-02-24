@@ -1490,7 +1490,7 @@ function showView(view, el) {
   document.getElementById('view-record').style.display = view === 'record' ? '' : 'none';
   const calEl = document.getElementById('view-calendar');
   calEl.classList.toggle('visible', view === 'calendar');
-  document.getElementById('view-measure').style.display = view === 'measure' ? '' : 'none';
+  document.getElementById('view-measure').style.display = view === 'measure' ? 'block' : 'none';
   document.getElementById('save-btn').style.display = view === 'record' ? '' : 'none';
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
