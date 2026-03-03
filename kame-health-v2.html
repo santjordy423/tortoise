@@ -644,6 +644,43 @@
   .diff-up   { color: var(--green); }
   .diff-down { color: var(--no); }
   .diff-zero { color: var(--text-muted); }
+
+  /* 記録日付ナビ */
+  .record-date-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 10px 14px;
+  }
+  .record-date-label {
+    font-family: 'Kaisei Opti', serif;
+    font-size: 0.95rem;
+    text-align: center;
+    flex: 1;
+  }
+  .record-date-today-badge {
+    font-size: 0.65rem;
+    padding: 2px 7px;
+    border-radius: 8px;
+    background: var(--green-light);
+    color: var(--green);
+    font-weight: 700;
+    margin-left: 6px;
+  }
+  .record-date-past-badge {
+    font-size: 0.65rem;
+    padding: 2px 7px;
+    border-radius: 8px;
+    background: #fff8e0;
+    color: #c8940a;
+    font-weight: 700;
+    margin-left: 6px;
+  }
 </style>
 </head>
 <body>
@@ -686,6 +723,12 @@
 
   <!-- ===== 記録画面 ===== -->
   <div id="view-record">
+    <div class="record-date-nav">
+      <button class="cal-nav" onclick="changeRecordDate(-1)">‹</button>
+      <div class="record-date-label" id="record-date-label"></div>
+      <button class="cal-nav" id="record-date-next-btn" onclick="changeRecordDate(1)">›</button>
+    </div>
+
     <div class="session-tabs">
       <button class="tab active" onclick="setSession('morning', this)">🌅 朝</button>
       <button class="tab" onclick="setSession('night', this)">🌙 夜</button>
@@ -937,10 +980,10 @@ async function syncFromCloud() {
   const loaded = await loadFromJsonBin();
   if (loaded) {
     localStorage.setItem('kameData', JSON.stringify(allData));
-    if (allData[todayStr]) recordState = allData[todayStr];
+    if (allData[currentRecordDate]) recordState = allData[currentRecordDate];
     renderLandCards();
     restoreRecordUI();
-    if (allData[todayStr]?.memo) document.getElementById('daily-memo').value = allData[todayStr].memo;
+    if (allData[currentRecordDate]?.memo) document.getElementById('daily-memo').value = allData[currentRecordDate].memo;
     renderCalendar();
     renderMeasureHistory();
   }
@@ -1187,10 +1230,12 @@ let session = 'morning';
 let recordState = {}; // { session: { turtleId: { poop, urate } } }
 let allData = {}; // { 'YYYY-MM-DD': { morning: {...}, night: {...} } }
 let calYear, calMonth, selectedTurtle;
+let currentRecordDate; // 記録中の日付（デフォルト＝今日）
 
 // 今日の日付
 const today = new Date();
 const todayStr = toDateStr(today);
+currentRecordDate = todayStr;
 calYear = today.getFullYear();
 calMonth = today.getMonth();
 selectedTurtle = LAND_TURTLES[0].id;
@@ -1215,16 +1260,17 @@ async function init() {
   }
 
   // 今日の記録があればStateに反映
-  if (allData[todayStr]) {
-    recordState = allData[todayStr];
+  if (allData[currentRecordDate]) {
+    recordState = allData[currentRecordDate];
   }
 
   renderLandCards();
   restoreRecordUI();
   // メモ復元
-  if (allData[todayStr]?.memo) {
-    document.getElementById('daily-memo').value = allData[todayStr].memo;
+  if (allData[currentRecordDate]?.memo) {
+    document.getElementById('daily-memo').value = allData[currentRecordDate].memo;
   }
+  updateRecordDateUI();
   renderTurtleChips();
   renderCalendar();
 }
@@ -1286,6 +1332,39 @@ function restoreRecordUI() {
   }
 }
 
+// ===== 記録日付ナビ =====
+function updateRecordDateUI() {
+  const d = new Date(currentRecordDate + 'T00:00:00');
+  const isToday = currentRecordDate === todayStr;
+  const label = d.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
+  const badge = isToday
+    ? '<span class="record-date-today-badge">今日</span>'
+    : '<span class="record-date-past-badge">過去の記録</span>';
+  document.getElementById('record-date-label').innerHTML = label + badge;
+  // 今日より先には進めない
+  document.getElementById('record-date-next-btn').style.visibility = isToday ? 'hidden' : 'visible';
+}
+
+function changeRecordDate(delta) {
+  const d = new Date(currentRecordDate + 'T00:00:00');
+  d.setDate(d.getDate() + delta);
+  const newDate = toDateStr(d);
+  if (newDate > todayStr) return; // 未来には行けない
+  currentRecordDate = newDate;
+  // 選択日のデータをロード
+  recordState = allData[currentRecordDate] ? JSON.parse(JSON.stringify(allData[currentRecordDate])) : {};
+  // メモ復元
+  document.getElementById('daily-memo').value = allData[currentRecordDate]?.memo || '';
+  // セッションボタンの選択状態をリセットしてUIを再描画
+  document.querySelectorAll('.session-tabs .tab').forEach((b, i) => {
+    b.classList.toggle('active', i === (session === 'morning' ? 0 : 1));
+  });
+  document.querySelectorAll('.btn').forEach(b => b.className = 'btn');
+  document.querySelectorAll('.btn-feed').forEach(b => b.className = 'btn-feed');
+  restoreRecordUI();
+  updateRecordDateUI();
+}
+
 function setSession(s, el) {
   session = s;
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -1312,10 +1391,10 @@ function selectFeed(value) {
 }
 
 async function save() {
-  allData[todayStr] = { ...allData[todayStr], ...recordState };
+  allData[currentRecordDate] = { ...allData[currentRecordDate], ...recordState };
   const memo = document.getElementById('daily-memo').value.trim();
-  if (memo) allData[todayStr].memo = memo;
-  else if (allData[todayStr]) delete allData[todayStr].memo;
+  if (memo) allData[currentRecordDate].memo = memo;
+  else if (allData[currentRecordDate]) delete allData[currentRecordDate].memo;
   localStorage.setItem('kameData', JSON.stringify(allData));
   renderCalendar();
   // JSONBinへ同期
