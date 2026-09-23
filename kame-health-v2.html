@@ -766,6 +766,10 @@
 
   <!-- カメ管理パネル -->
   <div class="turtle-manage-panel" id="turtle-manage-panel">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
+      <strong style="font-size:0.85rem">🐢 カメ管理</strong>
+      <button class="btn-jb secondary" onclick="toggleTurtleManage()">✕ 閉じる</button>
+    </div>
     <div id="tm-list" class="tm-list"></div>
     <div class="tm-add-form">
       <div class="settings-row">
@@ -996,12 +1000,16 @@ function renderTurtleManageList() {
 function toggleTurtleHidden(id) {
   const t = getTurtleById(id);
   if (!t) return;
-  t.hidden = !t.hidden;
+  ensureTurtleDefs();
+  const idx = allData._turtleHidden.indexOf(id);
+  if (idx >= 0) allData._turtleHidden.splice(idx, 1);
+  else allData._turtleHidden.push(id);
+  const nowHidden = idx < 0;
   localStorage.setItem('kameData', JSON.stringify(allData));
   saveToJsonBinDebounced();
   renderTurtleManageList();
   refreshAllTurtleViews();
-  setTmStatus(t.hidden ? `${t.name}を非表示にしました` : `${t.name}を表示に戻しました`);
+  setTmStatus(nowHidden ? `${t.name}を非表示にしました` : `${t.name}を表示に戻しました`);
 }
 
 function addTurtle() {
@@ -1014,7 +1022,7 @@ function addTurtle() {
   const id = 't_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
   ensureTurtleDefs();
-  allData._turtles.push({ id, name, gender, species, category, icon, hidden: false });
+  allData._turtleCustom.push({ id, name, gender, species, category, icon });
   localStorage.setItem('kameData', JSON.stringify(allData));
   saveToJsonBinDebounced();
 
@@ -1041,11 +1049,18 @@ function setSyncStatus(msg, isError = false) {
   el.style.color = isError ? 'var(--no)' : 'var(--text-muted)';
 }
 
+// 通信が固まって「保存中」「読み込み中」のまま止まらないよう、一定時間で打ち切る
+function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer));
+}
+
 async function loadFromJsonBin() {
   if (!jbConfig.apiKey || !jbConfig.binId) return false;
   try {
     setSyncStatus('☁️ 読み込み中...');
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${jbConfig.binId}/latest`, {
+    const res = await fetchWithTimeout(`https://api.jsonbin.io/v3/b/${jbConfig.binId}/latest`, {
       headers: { 'X-Master-Key': jbConfig.apiKey }
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -1054,7 +1069,8 @@ async function loadFromJsonBin() {
     setSyncStatus('☁️ 同期済み ✅');
     return true;
   } catch(e) {
-    setSyncStatus(`読込失敗: ${e.message}`, true);
+    const msg = e.name === 'AbortError' ? 'タイムアウト（通信が不安定です）' : e.message;
+    setSyncStatus(`読込失敗: ${msg}`, true);
     return false;
   }
 }
@@ -1069,7 +1085,7 @@ async function saveToJsonBin() {
   if (!jbConfig.apiKey || !jbConfig.binId) return;
   try {
     setSyncStatus('☁️ 保存中...');
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${jbConfig.binId}`, {
+    const res = await fetchWithTimeout(`https://api.jsonbin.io/v3/b/${jbConfig.binId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -1080,7 +1096,8 @@ async function saveToJsonBin() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     setSyncStatus('☁️ クラウド保存済み ✅');
   } catch(e) {
-    setSyncStatus(`クラウド保存失敗: ${e.message}`, true);
+    const msg = e.name === 'AbortError' ? 'タイムアウト（通信が不安定です）' : e.message;
+    setSyncStatus(`クラウド保存失敗: ${msg}`, true);
   }
 }
 
@@ -1361,14 +1378,8 @@ function daysBadgeHtml(turtleId) {
 }
 
 // ===== データ定義 =====
-const TURTLE_ICON_LABELS = {
-  hosiMale:   'ビルマホシガメ（♂）',
-  hosiFemale: 'ビルマホシガメ（♀）',
-  housha:     'ホウシャガメ',
-  herman:     'ヘルマンリクガメ',
-  kusagame:   'クサガメ',
-};
-
+// 元からいる7匹の情報はアプリ内に固定で持っておき、クラウドには送らない（容量節約のため）。
+// クラウドに送るのは「非表示にしたIDの一覧」と「新しく追加したカメの情報」だけ。
 const DEFAULT_TURTLES = [
   { id: 'michael', name: 'マイケル', gender: 'male',   species: 'ビルマホシガメ', category: 'land',  icon: 'hosiMale' },
   { id: 'lily',    name: 'リリー',   gender: 'female', species: 'ビルマホシガメ', category: 'land',  icon: 'hosiFemale' },
@@ -1379,13 +1390,26 @@ const DEFAULT_TURTLES = [
   { id: 'kuro',    name: 'クロ',     gender: 'male',   species: 'クサガメ',       category: 'water', icon: 'kusagame' },
 ];
 
-// 端末/クラウドのデータにカメ一覧が無い場合（初回・古いデータ）は初期セットを作る
+// 以前の形式（allData._turtles に全項目を保存）が残っていれば、軽量な新形式に変換する
 function ensureTurtleDefs() {
-  if (!allData._turtles) {
-    allData._turtles = DEFAULT_TURTLES.map(t => ({ ...t, hidden: false }));
+  if (Array.isArray(allData._turtles)) {
+    const defaultIds = new Set(DEFAULT_TURTLES.map(t => t.id));
+    const hiddenFromOld = allData._turtles.filter(t => t.hidden).map(t => t.id);
+    const customFromOld = allData._turtles
+      .filter(t => !defaultIds.has(t.id))
+      .map(({ hidden, ...rest }) => rest);
+    allData._turtleHidden = Array.from(new Set([...(allData._turtleHidden || []), ...hiddenFromOld]));
+    allData._turtleCustom = [...(allData._turtleCustom || []), ...customFromOld];
+    delete allData._turtles;
   }
+  if (!allData._turtleHidden) allData._turtleHidden = [];
+  if (!allData._turtleCustom) allData._turtleCustom = [];
 }
-function getTurtleDefs()     { return allData._turtles || []; }
+function getTurtleDefs() {
+  const hiddenSet = new Set(allData._turtleHidden || []);
+  return [...DEFAULT_TURTLES, ...(allData._turtleCustom || [])]
+    .map(t => ({ ...t, hidden: hiddenSet.has(t.id) }));
+}
 function getTurtleById(id)   { return getTurtleDefs().find(t => t.id === id); }
 function getLandTurtles()    { return getTurtleDefs().filter(t => t.category === 'land'  && !t.hidden); }
 function getWaterTurtles()   { return getTurtleDefs().filter(t => t.category === 'water' && !t.hidden); }
