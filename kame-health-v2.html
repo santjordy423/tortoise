@@ -770,6 +770,9 @@
       <strong style="font-size:0.85rem">🐢 カメ管理</strong>
       <button class="btn-jb secondary" onclick="toggleTurtleManage()">✕ 閉じる</button>
     </div>
+    <div style="font-size:0.68rem; color:var(--text-muted); margin-bottom:8px">
+      ※表示・非表示はこの端末だけの設定です（他の端末には影響しません）。追加したカメの情報は他の端末とも共有されます。
+    </div>
     <div id="tm-list" class="tm-list"></div>
     <div class="tm-add-form">
       <div class="settings-row">
@@ -1000,16 +1003,14 @@ function renderTurtleManageList() {
 function toggleTurtleHidden(id) {
   const t = getTurtleById(id);
   if (!t) return;
-  ensureTurtleDefs();
-  const idx = allData._turtleHidden.indexOf(id);
-  if (idx >= 0) allData._turtleHidden.splice(idx, 1);
-  else allData._turtleHidden.push(id);
+  const idx = turtleHidden.indexOf(id);
+  if (idx >= 0) turtleHidden.splice(idx, 1);
+  else turtleHidden.push(id);
   const nowHidden = idx < 0;
-  localStorage.setItem('kameData', JSON.stringify(allData));
-  saveToJsonBinDebounced();
+  saveTurtleHiddenLocal();
   renderTurtleManageList();
   refreshAllTurtleViews();
-  setTmStatus(nowHidden ? `${t.name}を非表示にしました` : `${t.name}を表示に戻しました`);
+  setTmStatus(nowHidden ? `${t.name}を非表示にしました（この端末のみ）` : `${t.name}を表示に戻しました（この端末のみ）`);
 }
 
 function addTurtle() {
@@ -1379,7 +1380,7 @@ function daysBadgeHtml(turtleId) {
 
 // ===== データ定義 =====
 // 元からいる7匹の情報はアプリ内に固定で持っておき、クラウドには送らない（容量節約のため）。
-// クラウドに送るのは「非表示にしたIDの一覧」と「新しく追加したカメの情報」だけ。
+// クラウドに送るのは「新しく追加したカメの情報」だけ。表示・非表示はこの端末だけのローカル設定（同期しない）。
 const DEFAULT_TURTLES = [
   { id: 'michael', name: 'マイケル', gender: 'male',   species: 'ビルマホシガメ', category: 'land',  icon: 'hosiMale' },
   { id: 'lily',    name: 'リリー',   gender: 'female', species: 'ビルマホシガメ', category: 'land',  icon: 'hosiFemale' },
@@ -1390,7 +1391,21 @@ const DEFAULT_TURTLES = [
   { id: 'kuro',    name: 'クロ',     gender: 'male',   species: 'クサガメ',       category: 'water', icon: 'kusagame' },
 ];
 
-// 以前の形式（allData._turtles に全項目を保存）が残っていれば、軽量な新形式に変換する
+// 非表示設定はこの端末のローカルにだけ保存する（クラウドには含めない）
+let turtleHidden = [];
+function loadTurtleHiddenLocal() {
+  try {
+    turtleHidden = JSON.parse(localStorage.getItem('kameTurtleHidden') || '[]');
+  } catch(e) {
+    turtleHidden = [];
+  }
+}
+function saveTurtleHiddenLocal() {
+  localStorage.setItem('kameTurtleHidden', JSON.stringify(turtleHidden));
+}
+
+// 以前の形式（allData._turtles や allData._turtleHidden にクラウド同期していたもの）が残っていれば、
+// ローカル設定に移行する
 function ensureTurtleDefs() {
   if (Array.isArray(allData._turtles)) {
     const defaultIds = new Set(DEFAULT_TURTLES.map(t => t.id));
@@ -1398,15 +1413,20 @@ function ensureTurtleDefs() {
     const customFromOld = allData._turtles
       .filter(t => !defaultIds.has(t.id))
       .map(({ hidden, ...rest }) => rest);
-    allData._turtleHidden = Array.from(new Set([...(allData._turtleHidden || []), ...hiddenFromOld]));
+    turtleHidden = Array.from(new Set([...turtleHidden, ...hiddenFromOld]));
     allData._turtleCustom = [...(allData._turtleCustom || []), ...customFromOld];
     delete allData._turtles;
+    saveTurtleHiddenLocal();
   }
-  if (!allData._turtleHidden) allData._turtleHidden = [];
+  if (Array.isArray(allData._turtleHidden)) {
+    turtleHidden = Array.from(new Set([...turtleHidden, ...allData._turtleHidden]));
+    delete allData._turtleHidden;
+    saveTurtleHiddenLocal();
+  }
   if (!allData._turtleCustom) allData._turtleCustom = [];
 }
 function getTurtleDefs() {
-  const hiddenSet = new Set(allData._turtleHidden || []);
+  const hiddenSet = new Set(turtleHidden);
   return [...DEFAULT_TURTLES, ...(allData._turtleCustom || [])]
     .map(t => ({ ...t, hidden: hiddenSet.has(t.id) }));
 }
@@ -1438,6 +1458,9 @@ async function init() {
 
   // JSONBin設定を読み込む
   loadJbConfig();
+
+  // カメの表示・非表示設定（この端末だけのローカル設定）を読み込む
+  loadTurtleHiddenLocal();
 
   // localStorage から読み込み（オフライン用）
   const saved = localStorage.getItem('kameData');
