@@ -1274,10 +1274,13 @@ async function init() {
   const saved = localStorage.getItem('kameData');
   if (saved) allData = JSON.parse(saved);
 
-  // JSONBinから最新データを取得（設定されていれば上書き）
-  const loaded = await loadFromJsonBin();
-  if (loaded) {
-    localStorage.setItem('kameData', JSON.stringify(allData));
+  // 端末にまだ記録が無い場合のみ、クラウドから自動取得する
+  // （既に端末内に記録がある場合は自動上書きしない。手動同期は設定パネルの「今すぐ同期」ボタンで行う）
+  if (!saved) {
+    const loaded = await loadFromJsonBin();
+    if (loaded) {
+      localStorage.setItem('kameData', JSON.stringify(allData));
+    }
   }
 
   // 今日の記録があればStateに反映
