@@ -746,19 +746,18 @@
     <button class="settings-btn" onclick="toggleSettings()">⚙️</button>
   </div>
 
-  <!-- JSONBin設定パネル -->
+  <!-- クラウド設定パネル（Firebase） -->
   <div class="settings-panel" id="settings-panel">
     <div class="settings-row">
-      <label>JSONBin マスターキー</label>
-      <input type="password" id="jb-api-key" placeholder="$2a$10$..." autocomplete="off">
+      <label>データベースURL</label>
+      <input type="text" id="cloud-db-url" placeholder="https://xxxx-default-rtdb.firebaseio.com" autocomplete="off">
     </div>
     <div class="settings-row">
-      <label>Bin ID</label>
-      <input type="text" id="jb-bin-id" placeholder="68xxxxxxxxxxxxxx" autocomplete="off">
+      <label>合言葉（保存パス）</label>
+      <input type="password" id="cloud-secret-path" placeholder="kame_xxxxxxxxxxxx" autocomplete="off">
     </div>
     <div class="settings-btns">
-      <button class="btn-jb primary" onclick="saveJbConfig()">💾 設定保存</button>
-      <button class="btn-jb secondary" onclick="createNewBin()">📦 新規Bin作成</button>
+      <button class="btn-jb primary" onclick="saveCloudConfig()">💾 設定保存</button>
       <button class="btn-jb secondary" onclick="syncFromCloud()">☁️ 今すぐ同期</button>
       <button class="btn-jb secondary" onclick="toggleTurtleManage()">🐢 カメ管理</button>
     </div>
@@ -955,19 +954,23 @@ function loadChartJs() {
   });
 }
 
-// ===== JSONBin連携 =====
-let jbConfig = { apiKey: '', binId: '' };
+// ===== クラウド連携（Firebase Realtime Database） =====
+let cloudConfig = { dbUrl: '', secretPath: '' };
 
-function loadJbConfig() {
-  const saved = localStorage.getItem('kameJsonBin');
-  if (saved) jbConfig = JSON.parse(saved);
-  document.getElementById('jb-api-key').value = jbConfig.apiKey || '';
-  document.getElementById('jb-bin-id').value  = jbConfig.binId  || '';
+function cloudUrl() {
+  return `${cloudConfig.dbUrl.replace(/\/+$/, '')}/${cloudConfig.secretPath}.json`;
 }
 
-function saveJbConfig() {
+function loadCloudConfig() {
+  const saved = localStorage.getItem('kameCloudConfig');
+  if (saved) cloudConfig = JSON.parse(saved);
+  document.getElementById('cloud-db-url').value     = cloudConfig.dbUrl || '';
+  document.getElementById('cloud-secret-path').value = cloudConfig.secretPath || '';
+}
+
+function saveCloudConfig() {
   readInputs();
-  localStorage.setItem('kameJsonBin', JSON.stringify(jbConfig));
+  localStorage.setItem('kameCloudConfig', JSON.stringify(cloudConfig));
   setSyncStatus('設定を保存しました ✅');
 }
 
@@ -1025,7 +1028,7 @@ function addTurtle() {
   ensureTurtleDefs();
   allData._turtleCustom.push({ id, name, gender, species, category, icon });
   localStorage.setItem('kameData', JSON.stringify(allData));
-  saveToJsonBinDebounced();
+  saveToCloudDebounced();
 
   document.getElementById('tm-name').value = '';
   document.getElementById('tm-species').value = '';
@@ -1057,16 +1060,14 @@ function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
   return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer));
 }
 
-async function loadFromJsonBin() {
-  if (!jbConfig.apiKey || !jbConfig.binId) return false;
+async function loadFromCloud() {
+  if (!cloudConfig.dbUrl || !cloudConfig.secretPath) return false;
   try {
     setSyncStatus('☁️ 読み込み中...');
-    const res = await fetchWithTimeout(`https://api.jsonbin.io/v3/b/${jbConfig.binId}/latest`, {
-      headers: { 'X-Master-Key': jbConfig.apiKey }
-    });
+    const res = await fetchWithTimeout(cloudUrl());
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
-    allData = json.record || {};
+    allData = json || {};
     setSyncStatus('☁️ 同期済み ✅');
     return true;
   } catch(e) {
@@ -1077,21 +1078,18 @@ async function loadFromJsonBin() {
 }
 
 let _saveDebounceTimer = null;
-function saveToJsonBinDebounced() {
+function saveToCloudDebounced() {
   clearTimeout(_saveDebounceTimer);
-  _saveDebounceTimer = setTimeout(() => saveToJsonBin(), 2000);
+  _saveDebounceTimer = setTimeout(() => saveToCloud(), 2000);
 }
 
-async function saveToJsonBin() {
-  if (!jbConfig.apiKey || !jbConfig.binId) return;
+async function saveToCloud() {
+  if (!cloudConfig.dbUrl || !cloudConfig.secretPath) return;
   try {
     setSyncStatus('☁️ 保存中...');
-    const res = await fetchWithTimeout(`https://api.jsonbin.io/v3/b/${jbConfig.binId}`, {
+    const res = await fetchWithTimeout(cloudUrl(), {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Master-Key': jbConfig.apiKey
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(allData)
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -1104,42 +1102,13 @@ async function saveToJsonBin() {
 
 function readInputs() {
   // 非ASCII文字（ゼロ幅スペース等）を除去してから取得
-  jbConfig.apiKey = document.getElementById('jb-api-key').value.replace(/[^\x20-\x7E]/g, '').trim();
-  jbConfig.binId  = document.getElementById('jb-bin-id').value.replace(/[^\x20-\x7E]/g, '').trim();
-}
-
-async function createNewBin() {
-  // 入力欄から直接取得（設定保存前でも動作するように）
-  readInputs();
-  if (!jbConfig.apiKey) { setSyncStatus('APIキーを入力してください', true); return; }
-  try {
-    setSyncStatus('📦 新規作成中...');
-    const res = await fetch('https://api.jsonbin.io/v3/b', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Master-Key': jbConfig.apiKey,
-        'X-Bin-Name': 'kame-health-data'
-      },
-      body: JSON.stringify(Object.keys(allData).length > 0 ? allData : { _init: true })
-    });
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(`HTTP ${res.status}: ${errText}`);
-    }
-    const json = await res.json();
-    jbConfig.binId = json.metadata.id;
-    document.getElementById('jb-bin-id').value = jbConfig.binId;
-    localStorage.setItem('kameJsonBin', JSON.stringify(jbConfig));
-    setSyncStatus(`✅ Bin作成完了！ID: ${jbConfig.binId}`);
-  } catch(e) {
-    setSyncStatus(`作成失敗: ${e.message}`, true);
-  }
+  cloudConfig.dbUrl      = document.getElementById('cloud-db-url').value.replace(/[^\x20-\x7E]/g, '').trim();
+  cloudConfig.secretPath = document.getElementById('cloud-secret-path').value.replace(/[^\x20-\x7E]/g, '').trim();
 }
 
 async function syncFromCloud() {
   readInputs();
-  const loaded = await loadFromJsonBin();
+  const loaded = await loadFromCloud();
   if (loaded) {
     ensureTurtleDefs();
     localStorage.setItem('kameData', JSON.stringify(allData));
@@ -1456,8 +1425,8 @@ async function init() {
   document.getElementById('header-date').textContent =
     today.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
 
-  // JSONBin設定を読み込む
-  loadJbConfig();
+  // クラウド設定を読み込む
+  loadCloudConfig();
 
   // カメの表示・非表示設定（この端末だけのローカル設定）を読み込む
   loadTurtleHiddenLocal();
@@ -1469,7 +1438,7 @@ async function init() {
   // 端末にまだ記録が無い場合のみ、クラウドから自動取得する
   // （既に端末内に記録がある場合は自動上書きしない。手動同期は設定パネルの「今すぐ同期」ボタンで行う）
   if (!saved) {
-    const loaded = await loadFromJsonBin();
+    const loaded = await loadFromCloud();
     if (loaded) {
       localStorage.setItem('kameData', JSON.stringify(allData));
     }
@@ -1650,7 +1619,7 @@ async function save() {
   else if (allData[currentRecordDate]) delete allData[currentRecordDate].memo;
   localStorage.setItem('kameData', JSON.stringify(allData));
   renderCalendar();
-  saveToJsonBinDebounced();
+  saveToCloudDebounced();
   // 簡易フィードバック
   const btn = document.getElementById('save-btn');
   btn.textContent = '✅ 保存しました！';
@@ -1981,7 +1950,7 @@ async function saveMeasurement() {
 
   localStorage.setItem('kameData', JSON.stringify(allData));
   renderMeasureHistory();
-  saveToJsonBinDebounced();
+  saveToCloudDebounced();
 
   const btn = document.querySelector('.measure-save-btn');
   btn.textContent = '✅ 記録しました！';
